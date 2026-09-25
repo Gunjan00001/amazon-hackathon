@@ -1,10 +1,14 @@
+from array import array
 from collections import defaultdict
 
+import numpy as np
 import pandas as pd
 
 from .text import address_tokens, fold_ascii, normalize_name, phonetic_key, postal_key
 
 STOPWORDS = {"private", "limited", "company", "corporation", "incorporated", "and", "the", "of", "llc", "llp"}
+
+PASS_NAMES = ("postal", "rare_token", "phonetic", "addr_token")
 
 
 def _significant(tokens):
@@ -81,19 +85,21 @@ def generate_candidates(s1_df, mid_df, max_candidates_per_s1=200, max_postings=2
             if addr_df[(c, t)] <= max_postings:
                 addr_index[(c, t)].append(i)
 
-    rows = []
+    rows_i = array("i")
+    rows_j = array("i")
+    rows_p = array("b")
     for i, k in enumerate(_iter_keys(s1_df)):
         c = k["country"]
         seen = set()
         budget = max_candidates_per_s1
         addr_sorted = sorted({t for t in k["addr_tokens"] if addr_df[(c, t)]}, key=lambda t: addr_df[(c, t)])
         passes = (
-            ("postal", [postal_index.get((c, k["postal"]))] if k["postal"] else []),
-            ("rare_token", [token_index.get((c, t)) for t in k["tokens"]]),
-            ("phonetic", [phonetic_index.get((c, k["phonetic"]))] if k["phonetic"] else []),
-            ("addr_token", [addr_index.get((c, t)) for t in addr_sorted[:1]]),
+            (0, [postal_index.get((c, k["postal"]))] if k["postal"] else []),
+            (1, [token_index.get((c, t)) for t in k["tokens"]]),
+            (2, [phonetic_index.get((c, k["phonetic"]))] if k["phonetic"] else []),
+            (3, [addr_index.get((c, t)) for t in addr_sorted[:1]]),
         )
-        for pass_name, posting_lists in passes:
+        for pass_code, posting_lists in passes:
             done = False
             for postings in posting_lists:
                 if not postings:
@@ -102,7 +108,9 @@ def generate_candidates(s1_df, mid_df, max_candidates_per_s1=200, max_postings=2
                     if j in seen:
                         continue
                     seen.add(j)
-                    rows.append((i, j, pass_name))
+                    rows_i.append(i)
+                    rows_j.append(j)
+                    rows_p.append(pass_code)
                     budget -= 1
                     if budget <= 0:
                         done = True
@@ -112,5 +120,9 @@ def generate_candidates(s1_df, mid_df, max_candidates_per_s1=200, max_postings=2
             if done:
                 break
 
-    pairs = pd.DataFrame(rows, columns=["s1_idx", "mid_idx", "pass"])
-    return pairs.astype({"s1_idx": "int32", "mid_idx": "int32"})
+    pairs = pd.DataFrame({
+        "s1_idx": np.array(rows_i, dtype="int32"),
+        "mid_idx": np.array(rows_j, dtype="int32"),
+        "pass": pd.Categorical.from_codes(np.array(rows_p, dtype="int8"), categories=list(PASS_NAMES)),
+    })
+    return pairs

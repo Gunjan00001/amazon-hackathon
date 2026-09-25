@@ -11,7 +11,8 @@ from ..io_tsv import write_candidate_pairs, write_matching_results
 
 def load_mid_ids(clean_dir, split):
     return pd.concat(
-        [pd.read_parquet(clean_dir / f"{split}_s2.parquet"), pd.read_parquet(clean_dir / f"{split}_s3.parquet")],
+        [pd.read_parquet(clean_dir / f"{split}_s2.parquet", columns=["entity_id"]),
+         pd.read_parquet(clean_dir / f"{split}_s3.parquet", columns=["entity_id"])],
         ignore_index=True,
     )["entity_id"].tolist()
 
@@ -29,7 +30,7 @@ def main():
 
     clean_dir, out_dir = Path(args.clean_dir), Path(args.out_dir)
     gbdt_dir = Path(args.gbdt_dir)
-    s1_ids = pd.read_parquet(clean_dir / "test_s1.parquet")["entity_id"].tolist()
+    s1_ids = pd.read_parquet(clean_dir / "test_s1.parquet", columns=["entity_id"])["entity_id"].tolist()
     mid_ids = load_mid_ids(clean_dir, "test")
     candidates = pd.read_parquet(gbdt_dir / "pruned_test.parquet")
 

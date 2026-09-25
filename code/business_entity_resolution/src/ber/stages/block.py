@@ -1,4 +1,5 @@
 import argparse
+import gc
 import json
 from pathlib import Path
 
@@ -8,13 +9,18 @@ from .. import config
 from ..blocking import blocking_recall, generate_candidates
 from ..labels import positive_pairs
 
+READ_COLS = ["entity_id", "business_name", "business_address", "country"]
+
+
+def load_mid(clean_dir, split):
+    frames = [pd.read_parquet(clean_dir / f"{split}_s2.parquet", columns=READ_COLS),
+              pd.read_parquet(clean_dir / f"{split}_s3.parquet", columns=READ_COLS)]
+    return pd.concat(frames, ignore_index=True)
+
 
 def process(split, clean_dir, out_dir, max_candidates, max_postings, labels, s1_limit=0, mid_limit=0):
-    s1 = pd.read_parquet(clean_dir / f"{split}_s1.parquet")
-    mid = pd.concat(
-        [pd.read_parquet(clean_dir / f"{split}_s2.parquet"), pd.read_parquet(clean_dir / f"{split}_s3.parquet")],
-        ignore_index=True,
-    )
+    s1 = pd.read_parquet(clean_dir / f"{split}_s1.parquet", columns=READ_COLS)
+    mid = load_mid(clean_dir, split)
     if s1_limit:
         s1 = s1.head(s1_limit)
     if mid_limit:
@@ -34,6 +40,8 @@ def process(split, clean_dir, out_dir, max_candidates, max_postings, labels, s1_
         lp = set(positive_pairs(s1["entity_id"].tolist(), mid["entity_id"].tolist(), labels))
         st["labels_evaluated"] = len(lp)
         st["recall_ceiling"] = blocking_recall(pairs, lp)
+    del s1, mid, pairs
+    gc.collect()
     return st
 
 

@@ -13,9 +13,13 @@ from ..gbdt import predict_scores, train_model
 from ..labels import positive_pairs
 
 
+READ_COLS = ["entity_id", "business_name", "business_address", "country"]
+
+
 def load_mid(clean_dir, split):
     return pd.concat(
-        [pd.read_parquet(clean_dir / f"{split}_s2.parquet"), pd.read_parquet(clean_dir / f"{split}_s3.parquet")],
+        [pd.read_parquet(clean_dir / f"{split}_s2.parquet", columns=READ_COLS),
+         pd.read_parquet(clean_dir / f"{split}_s3.parquet", columns=READ_COLS)],
         ignore_index=True,
     )
 
@@ -58,7 +62,7 @@ def main():
     clean_dir, block_dir, out_dir = Path(args.clean_dir), Path(args.block_dir), Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    s1 = pd.read_parquet(clean_dir / "train_s1.parquet")
+    s1 = pd.read_parquet(clean_dir / "train_s1.parquet", columns=READ_COLS)
     mid = load_mid(clean_dir, "train")
     ps1, pmid = prepare_records(s1), prepare_records(mid)
     labels = pd.read_parquet(clean_dir / "labels.parquet")
@@ -99,7 +103,7 @@ def main():
     (out_dir / "metrics.json").write_text(json.dumps(metrics, indent=2), encoding="utf-8")
     print(json.dumps(metrics, indent=2), flush=True)
 
-    s1t = pd.read_parquet(clean_dir / "test_s1.parquet")
+    s1t = pd.read_parquet(clean_dir / "test_s1.parquet", columns=READ_COLS)
     midt = load_mid(clean_dir, "test")
     ps1t, pmidt = prepare_records(s1t), prepare_records(midt)
     tcand = pd.read_parquet(block_dir / "test_candidates.parquet")
