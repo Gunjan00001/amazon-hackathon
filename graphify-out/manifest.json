@@ -1,0 +1,44 @@
+{
+  "D:\\Amazon project\\DATA\\student_resource\\utils\\validate_submission.py": {
+    "mtime": 1790338134.6568465,
+    "seen": 1790343141.1719022,
+    "ast_hash": "694b3b34ace720c0e02a78238d18dd0d",
+    "semantic_hash": "694b3b34ace720c0e02a78238d18dd0d"
+  },
+  "D:\\Amazon project\\tools\\bench_gbdt.py": {
+    "mtime": 1790342179.0629916,
+    "seen": 1790343141.1719065,
+    "ast_hash": "27006765bfc667b5a63f98d1bb7e1ebf",
+    "semantic_hash": "27006765bfc667b5a63f98d1bb7e1ebf"
+  },
+  "D:\\Amazon project\\tools\\eda_dataset.py": {
+    "mtime": 1790341534.41841,
+    "seen": 1790343141.1719081,
+    "ast_hash": "651ac47aceb3f61276d5259f524b4f3d",
+    "semantic_hash": "651ac47aceb3f61276d5259f524b4f3d"
+  },
+  "D:\\Amazon project\\DATA\\student_resource\\Documentation_template.md": {
+    "mtime": 1790338116.6941545,
+    "seen": 1790343141.1719089,
+    "ast_hash": "4885308a800c6e8746e5ef2e751481c9",
+    "semantic_hash": "4885308a800c6e8746e5ef2e751481c9"
+  },
+  "D:\\Amazon project\\DATA\\student_resource\\README.md": {
+    "mtime": 1790338116.7119777,
+    "seen": 1790343141.1719093,
+    "ast_hash": "72c51a23dbd298005e1eb89639176485",
+    "semantic_hash": "72c51a23dbd298005e1eb89639176485"
+  },
+  "D:\\Amazon project\\DATA\\student_resource\\dataset\\DATASET.md": {
+    "mtime": 1790341747.553887,
+    "seen": 1790343141.17191,
+    "ast_hash": "f00c53d1a1181ae10f70ce81ed2a5f6d",
+    "semantic_hash": "f00c53d1a1181ae10f70ce81ed2a5f6d"
+  },
+  "D:\\Amazon project\\PROBLEM_STATEMENT.md": {
+    "mtime": 1790276139.4207983,
+    "seen": 1790343141.171911,
+    "ast_hash": "ab5f655a0ea98d6dedac8265d71dce6f",
+    "semantic_hash": "ab5f655a0ea98d6dedac8265d71dce6f"
+  }
+}

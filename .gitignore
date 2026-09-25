@@ -1,0 +1,19 @@
+# Large challenge data — never commit (>100 MB files, not redistributable)
+DATA/**/*.tsv
+DATA/**/*.zip
+DATA/__MACOSX/
+
+# OS junk
+**/.DS_Store
+
+# Python / environment
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Generated caches and artifacts
+tools/eda_cache/
+graphify-out/cache/
+graphify-out/.graphify_*
+output/**/*.tsv

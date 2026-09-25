@@ -1,0 +1,326 @@
+{
+  "train": {
+    "train_source1.tsv": {
+      "file": "train_source1.tsv",
+      "rows": 2206821,
+      "dup_entity_ids": 0,
+      "country": {
+        "US": 1323633,
+        "India": 883188
+      },
+      "empty_name": 0,
+      "empty_address": 0,
+      "empty_country": 0,
+      "qmark_name": 0,
+      "qmark_address": 5,
+      "nonascii_name": 0,
+      "nonascii_address": 554,
+      "addr_starts_digit": 1365839,
+      "columns": [
+        "entity_id",
+        "business_name",
+        "business_address",
+        "country"
+      ],
+      "unique_entity_ids": 2206821,
+      "name_len_mean": 24.03,
+      "addr_len_mean": 52.07,
+      "name_len_p50": 24.0,
+      "name_len_p95": 37.0,
+      "addr_len_p50": 41.0,
+      "addr_len_p95": 103.0,
+      "examples": {
+        "qmark_name": [],
+        "nonascii_name": [],
+        "empty_address": []
+      }
+    },
+    "train_source2.tsv": {
+      "file": "train_source2.tsv",
+      "rows": 5034616,
+      "dup_entity_ids": 0,
+      "country": {
+        "US": 3016817,
+        "India": 2017799
+      },
+      "empty_name": 0,
+      "empty_address": 168967,
+      "empty_country": 0,
+      "qmark_name": 0,
+      "qmark_address": 11,
+      "nonascii_name": 764608,
+      "nonascii_address": 478453,
+      "addr_starts_digit": 2567674,
+      "columns": [
+        "entity_id",
+        "business_name",
+        "business_address",
+        "country"
+      ],
+      "unique_entity_ids": 5034616,
+      "name_len_mean": 25.1,
+      "addr_len_mean": 46.23,
+      "name_len_p50": 25.0,
+      "name_len_p95": 40.0,
+      "addr_len_p50": 37.0,
+      "addr_len_p95": 96.0,
+      "examples": {
+        "qmark_name": [],
+        "nonascii_name": [
+          "\u0930\u093e\u092e \u092e\u093e\u0930\u094d\u0915\u0947\u091f\u093f\u0902\u0917 \u092a\u094d\u0930\u093e\u0907\u0935\u0947\u091f \u0932\u093f\u092e\u093f\u091f\u0947\u0921",
+          "\u0906\u0926\u093f\u0924\u094d\u092f \u092a\u094d\u0930\u0949\u092a\u0930\u094d\u091f\u0940\u091c \u090f\u0932\u090f\u0932\u092a\u0940",
+          "\u0938\u0928 \u0915\u0902\u0938\u094d\u091f\u094d\u0930\u0915\u094d\u0936\u0902\u0938 \u092a\u094d\u0930\u093e\u0907\u0935\u0947\u091f \u0932\u093f\u092e\u093f\u091f\u0947\u0921",
+          "\u0930\u093f\u092f\u0932 \u092e\u0949\u0921\u0930\u094d\u0928 \u092b\u0942\u0921 \u0932\u093f\u092e\u093f\u091f\u0947\u0921",
+          "\u0b95\u0bc1\u0bb3\u0bcb\u0baa\u0bb2\u0bcd \u0baa\u0bbf\u0b9a\u0bbf\u0ba9\u0bb8\u0bcd \u0baa\u0bbf\u0bb0\u0bc8\u0bb5\u0bc7\u0b9f\u0bcd \u0bb2\u0bbf\u0bae\u0bbf\u0b9f\u0bc6\u0b9f\u0bcd"
+        ],
+        "empty_address": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      }
+    },
+    "train_source3.tsv": {
+      "file": "train_source3.tsv",
+      "rows": 5285603,
+      "dup_entity_ids": 0,
+      "country": {
+        "US": 3170056,
+        "India": 2115547
+      },
+      "empty_name": 0,
+      "empty_address": 175916,
+      "empty_country": 0,
+      "qmark_name": 0,
+      "qmark_address": 10,
+      "nonascii_name": 606737,
+      "nonascii_address": 476588,
+      "addr_starts_digit": 2705751,
+      "columns": [
+        "entity_id",
+        "business_name",
+        "business_address",
+        "country"
+      ],
+      "unique_entity_ids": 5285603,
+      "name_len_mean": 25.2,
+      "addr_len_mean": 46.71,
+      "name_len_p50": 25.0,
+      "name_len_p95": 42.0,
+      "addr_len_p50": 42.0,
+      "addr_len_p95": 91.0,
+      "examples": {
+        "qmark_name": [],
+        "nonascii_name": [
+          "LLC Moncada L\u00e9arning Center",
+          "B\u00e9que",
+          "\u0b85\u0bb0\u0bbf\u0bb9\u0ba8\u0bcd\u0ba4\u0bcd Foundation Private Limited",
+          "Cardiology Heartland C\u00e1re Associates #98825",
+          "\u0d38\u0d3f\u0d7d\u0d35\u0d7c \u0d15\u0d7a\u0d38\u0d7e\u0d1f\u0d4d\u0d1f\u0d7b\u0d38\u0d3f \u0d2a\u0d4d\u0d30\u0d48\u0d35\u0d31\u0d4d\u0d31\u0d4d \u0d32\u0d3f\u0d2e\u0d3f\u0d31\u0d4d\u0d31\u0d21\u0d4d"
+        ],
+        "empty_address": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      }
+    }
+  },
+  "test": {
+    "test_source1.tsv": {
+      "file": "test_source1.tsv",
+      "rows": 1732544,
+      "dup_entity_ids": 0,
+      "country": {
+        "India": 809986,
+        "US": 663106,
+        "France": 259452
+      },
+      "empty_name": 0,
+      "empty_address": 0,
+      "empty_country": 0,
+      "qmark_name": 0,
+      "qmark_address": 5,
+      "nonascii_name": 40789,
+      "nonascii_address": 73800,
+      "addr_starts_digit": 1001839,
+      "columns": [
+        "entity_id",
+        "business_name",
+        "business_address",
+        "country"
+      ],
+      "unique_entity_ids": 1732544,
+      "name_len_mean": 23.84,
+      "addr_len_mean": 57.21,
+      "name_len_p50": 24.0,
+      "name_len_p95": 36.0,
+      "addr_len_p50": 50.0,
+      "addr_len_p95": 105.0,
+      "examples": {
+        "qmark_name": [],
+        "nonascii_name": [
+          "Maison de Sant\u00e9 Generation",
+          "\u00c9cole primaire Sainte Pierre",
+          "\u00c9tablissements Demployeurs SARL",
+          "\u00c9cole primaire de la Sainte",
+          "\u00c9cole primaire du Hj"
+        ],
+        "empty_address": []
+      }
+    },
+    "test_source2.tsv": {
+      "file": "test_source2.tsv",
+      "rows": 4887273,
+      "dup_entity_ids": 0,
+      "country": {
+        "India": 2312565,
+        "US": 1871330,
+        "France": 703378
+      },
+      "empty_name": 0,
+      "empty_address": 129408,
+      "empty_country": 0,
+      "qmark_name": 0,
+      "qmark_address": 11,
+      "nonascii_name": 928158,
+      "nonascii_address": 720665,
+      "addr_starts_digit": 2290504,
+      "columns": [
+        "entity_id",
+        "business_name",
+        "business_address",
+        "country"
+      ],
+      "unique_entity_ids": 4887273,
+      "name_len_mean": 25.7,
+      "addr_len_mean": 50.41,
+      "name_len_p50": 25.0,
+      "name_len_p95": 41.0,
+      "addr_len_p50": 43.0,
+      "addr_len_p95": 99.0,
+      "examples": {
+        "qmark_name": [],
+        "nonascii_name": [
+          "SCI Ptit \u00c0micale",
+          "\u0c15\u0c43\u0c37\u0c4d\u0c23\u0c3e \u0c07\u0c02\u0c2a\u0c46\u0c15\u0c4d\u0c38\u0c4d \u0c32\u0c3f\u0c2e\u0c3f\u0c1f\u0c46\u0c21\u0c4d",
+          "\u0ad0 Foundation \u0aaa\u0acd\u0ab0\u0abe\u0a87\u0ab5\u0ac7\u0a9f \u0ab2\u0abf\u0aae\u0abf\u0a9f\u0ac7\u0aa1",
+          "\u0a38\u0a15\u0a3e\u0a08 \u0a05\u0a30\u0a3f\u0a39\u0a70\u0a24 \u0a17\u0a32\u0a4b\u0a2c\u0a32 \u0a2a\u0a4d\u0a30\u0a3e. \u0a32\u0a3f.",
+          "OZT \u00c0MICALE SAS"
+        ],
+        "empty_address": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      }
+    },
+    "test_source3.tsv": {
+      "file": "test_source3.tsv",
+      "rows": 5082316,
+      "dup_entity_ids": 0,
+      "country": {
+        "India": 2405000,
+        "US": 1945701,
+        "France": 731615
+      },
+      "empty_name": 0,
+      "empty_address": 136098,
+      "empty_country": 0,
+      "qmark_name": 0,
+      "qmark_address": 11,
+      "nonascii_name": 737515,
+      "nonascii_address": 729222,
+      "addr_starts_digit": 2385124,
+      "columns": [
+        "entity_id",
+        "business_name",
+        "business_address",
+        "country"
+      ],
+      "unique_entity_ids": 5082316,
+      "name_len_mean": 25.66,
+      "addr_len_mean": 48.74,
+      "name_len_p50": 25.0,
+      "name_len_p95": 42.0,
+      "addr_len_p50": 43.0,
+      "addr_len_p95": 94.0,
+      "examples": {
+        "qmark_name": [],
+        "nonascii_name": [
+          "\u092e\u0949\u0921\u0930\u094d\u0928 \u092b\u093e\u0907\u0928\u0947\u0902\u0938",
+          "\u0b88\u0bb8\u0bcd\u0b9f\u0bb0\u0bcd\u0ba9\u0bcd \u0b95\u0ba9\u0bcd\u0b9a\u0bb2\u0bcd\u0b9f\u0ba9\u0bcd\u0b9a\u0bbf \u0baa\u0bbf\u0bb0\u0bc8\u0bb5\u0bc7\u0b9f\u0bcd \u0bb2\u0bbf\u0bae\u0bbf\u0b9f\u0bc6\u0b9f\u0bcd",
+          "Sun \u092a\u093e\u0935\u0930 Provision",
+          "Engages \u00c0rt Pharmacie SCI",
+          "Europ & Fr\u00e8res Distribution S.A."
+        ],
+        "empty_address": [
+          "",
+          "",
+          "",
+          "",
+          ""
+        ]
+      }
+    }
+  },
+  "ground_truth": {
+    "rows": 2206821,
+    "singletons": 123247,
+    "singleton_pct": 5.585,
+    "total_matches": 7638365,
+    "mean_matches_per_s1": 3.461,
+    "max_matches_per_s1": 11,
+    "match_count_distribution": {
+      "0": 123247,
+      "1": 119157,
+      "2": 375212,
+      "3": 530841,
+      "4": 484115,
+      "5": 321957,
+      "6": 164868,
+      "7": 63968,
+      "8": 18680,
+      "9": 4205,
+      "10": 534,
+      "11": 37
+    },
+    "unique_matched_ids": 7638365,
+    "matched_ids_used_by_multiple_s1": 0,
+    "sample_rows": [
+      {
+        "source1_entity_id": "S1-965667",
+        "matched_entity_ids": "S2-681193310,S2-743505751,S3-775321672,S3-11291185,S3-860443364",
+        "n": 5
+      },
+      {
+        "source1_entity_id": "S1-55344266",
+        "matched_entity_ids": "S2-249013014,S2-197070651,S3-478195123,S3-384364074",
+        "n": 4
+      },
+      {
+        "source1_entity_id": "S1-343815751",
+        "matched_entity_ids": "S2-790675320,S2-479876582,S3-878454467",
+        "n": 3
+      }
+    ],
+    "membership": {
+      "train_source2.tsv": {
+        "gt_ids_for_source": 3693619,
+        "missing_from_source": 0,
+        "examples_missing": []
+      },
+      "train_source3.tsv": {
+        "gt_ids_for_source": 3944746,
+        "missing_from_source": 0,
+        "examples_missing": []
+      }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Graphify corpus exclusions
+.venv/
+graphify-out/
+DATA/__MACOSX/
+DATA/student_resource/dataset/*.tsv
+DATA/student_resource/.DS_Store
+tools/eda_cache/
+tools/eda_stats.json
+tools/bench_results.json
+# The PDF is fully transcribed in PROBLEM_STATEMENT.md; avoid duplicate/unreadable paper
+*.pdf

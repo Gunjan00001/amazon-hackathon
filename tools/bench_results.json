@@ -1,0 +1,52 @@
+{
+  "lightgbm": {
+    "best_iteration": 335,
+    "fit_seconds": 5.7,
+    "infer_seconds": 0.38,
+    "pair_auc": 0.99973,
+    "average_precision": 0.99976,
+    "best_macro_f05": 0.99539,
+    "best_threshold": 0.7500000000000002
+  },
+  "xgboost": {
+    "best_iteration": 790,
+    "fit_seconds": 25.4,
+    "infer_seconds": 0.25,
+    "pair_auc": 0.99973,
+    "average_precision": 0.99977,
+    "best_macro_f05": 0.99561,
+    "best_threshold": 0.8250000000000003
+  },
+  "imbalanced": {
+    "config": {
+      "n_s1": 100000,
+      "max_neg_per_s1": 20,
+      "neg_pick_prob": 0.3,
+      "seed": 42
+    },
+    "pairs": 1832585,
+    "positives": 345670,
+    "val_pairs": 368736,
+    "val_entities": 19984,
+    "models": {
+      "lightgbm": {
+        "best_iteration": 785,
+        "fit_seconds": 33.1,
+        "infer_seconds": 3.34,
+        "pair_auc": 0.9998,
+        "average_precision": 0.99908,
+        "best_macro_f05": 0.98604,
+        "best_threshold": 0.7250000000000003
+      },
+      "xgboost": {
+        "best_iteration": 998,
+        "fit_seconds": 96.2,
+        "infer_seconds": 1.0,
+        "pair_auc": 0.9998,
+        "average_precision": 0.99907,
+        "best_macro_f05": 0.98574,
+        "best_threshold": 0.6750000000000003
+      }
+    }
+  }
+}
