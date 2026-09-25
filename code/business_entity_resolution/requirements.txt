@@ -1,0 +1,9 @@
+pandas==3.0.6
+pyarrow==25.0.1
+numpy==2.5.3
+scikit-learn==1.9.1
+lightgbm==4.7.0
+rapidfuzz==3.14.6
+jellyfish==1.2.1
+anyascii==0.3.3
+pytest==9.1.1

@@ -96,8 +96,8 @@ from ber.score import best_threshold, entity_f05, macro_f05
 
 
 def test_entity_f05_worked_example():
-    labels = np.array([1, 1, 1])
-    preds = np.array([1, 1, 0])
+    labels = np.array([1, 1, 0])
+    preds = np.array([1, 1, 1])
     assert abs(entity_f05(labels, preds) - 0.714285) < 1e-5
 
 
