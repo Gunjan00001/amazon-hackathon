@@ -27,7 +27,7 @@ def feature_matrix(ps1, pmid, chunk, s1v=None, midv=None):
         from ..vector_features import pair_vector_features
         i = chunk["s1_idx"].to_numpy()
         j = chunk["mid_idx"].to_numpy()
-        X = np.column_stack([X, pair_vector_features(i, j, s1v["name"], s1v["addr"], midv["name"], midv["addr"])])
+        X = np.column_stack([X, pair_vector_features(i, j, s1v["vec"], midv["vec"])])
     return X.astype("float32")
 
 

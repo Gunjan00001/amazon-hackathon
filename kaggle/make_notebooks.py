@@ -31,25 +31,64 @@ PIP = {
 
 FIND_INPUT = '''
 import glob
+import importlib
 import os
-import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
-RAW = "{raw}"
-ART = "{art}"
-os.environ["BER_DATA_DIR"] = RAW
-os.environ["BER_ARTIFACT_DIR"] = ART
+os.environ["BER_ARTIFACT_DIR"] = "{art}"
+_whl = sorted(glob.glob("/kaggle/input/**/*.whl", recursive=True))
 
-_hits = sorted(glob.glob("/kaggle/input/amz-er-2026-code/**/ber/__init__.py", recursive=True))
-CODE = str(Path(_hits[0]).parent.parent) if _hits else "/kaggle/input/amz-er-2026-code/src"
-sys.path.insert(0, CODE)
-print("code path:", CODE)
+
+def _locate_code():
+    hits = sorted(glob.glob("/kaggle/input/**/ber/__init__.py", recursive=True))
+    return str(Path(hits[0]).parent.parent) if hits else ""
+
+
+def _locate_raw():
+    hits = sorted(glob.glob("/kaggle/input/**/train/train_source1.tsv", recursive=True))
+    return str(Path(hits[0]).parent.parent) if hits else "{raw}"
+
+
+CODE = _locate_code()
+RAW = _locate_raw()
+os.environ["BER_DATA_DIR"] = RAW
+
+
+def _vendor():
+    dst = Path("/kaggle/working/_deps")
+    dst.mkdir(parents=True, exist_ok=True)
+    for w in _whl:
+        try:
+            zipfile.ZipFile(w).extractall(dst)
+        except Exception as exc:
+            print("wheel extract failed", w, exc)
+    return str(dst)
+
+
+DEPS = _vendor()
+for _p in (DEPS, CODE):
+    if _p:
+        sys.path.insert(0, _p)
+print("code:", CODE)
+print("raw:", RAW)
+print("wheels:", len(_whl))
+try:
+    import anyascii, jellyfish, rapidfuzz
+    print("deps OK")
+except Exception as exc:
+    print("deps FAILED:", exc)
+try:
+    import ber
+    print("ber OK")
+except Exception as exc:
+    print("ber FAILED:", exc)
 
 
 def find(sub):
     hits = sorted(glob.glob(f"/kaggle/input/**/artifacts/{{sub}}", recursive=True))
-    print(sub, "->", hits[:3])
+    print(sub, "->", hits[:2])
     return hits[0] if hits else ""
 
 
@@ -58,11 +97,16 @@ BLOCK = find("block")
 EMBED = find("embed")
 GBDT = find("gbdt")
 RERANK = find("rerank")
-print("inputs located")
 
 
 def run(module, *args):
-    subprocess.run([sys.executable, "-m", module, *args], check=True)
+    mod = importlib.import_module(module)
+    argv = sys.argv
+    sys.argv = [module] + [str(a) for a in args]
+    try:
+        mod.main()
+    finally:
+        sys.argv = argv
 '''
 
 PRINT = '''
@@ -80,6 +124,14 @@ out_dir = Path(ART) / "out"
 if out_dir.exists():
     print("outputs:", sorted(x.name for x in out_dir.glob("*.tsv")))
 '''
+
+
+CONNECTIVITY = '''import socket
+try:
+    socket.create_connection(("pypi.org", 443), timeout=10)
+    print("internet: OK")
+except Exception as exc:
+    print("internet: FAILED", exc)'''
 
 
 def code_cell(src):
@@ -121,8 +173,9 @@ def make_notebook(nb_id, slug, title, gpu, module, args):
     )
     cells = [
         md_cell(header),
-        code_cell(f"!pip -q install {PIP[nb_id]}"),
+        code_cell(f"!pip -q install {PIP[nb_id]} || pip -q install --no-index --find-links /kaggle/input/amz-er-2026-wheels {PIP[nb_id]}"),
         code_cell(FIND_INPUT.format(raw=RAW_PATH, art=ARTIFACT_PATH)),
+        code_cell(CONNECTIVITY),
         code_cell(run_expression(module, args)),
         code_cell(PRINT),
     ]

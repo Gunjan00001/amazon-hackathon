@@ -27,6 +27,7 @@ OUTPUT_DIR = REPO / "output"
 
 RAW_ID = f"{USER}/amz-er-2026-raw"
 CODE_ID = f"{USER}/amz-er-2026-code"
+WHEELS_ID = f"{USER}/amz-er-2026-wheels"
 
 KERNELS = [
     {"nb": "N1", "file": "N1_clean", "slug": "amz-er-n1-clean", "gpu": False},
@@ -68,6 +69,11 @@ def run(cmd, check=True, quiet=False):
     return r
 
 
+def dataset_exists(ds_id):
+    r = subprocess.run(["kaggle", "datasets", "files", ds_id], capture_output=True, text=True)
+    return r.returncode == 0
+
+
 def sync_dataset(ds_id, title, folder, message):
     folder = Path(folder)
     folder.mkdir(parents=True, exist_ok=True)
@@ -79,15 +85,11 @@ def sync_dataset(ds_id, title, folder, message):
             "licenses": [{"name": "unknown"}], "isPrivate": True,
         }, indent=2), encoding="utf-8")
     try:
-        r = run(["kaggle", "datasets", "create", "-p", str(folder), "--dir-mode", "skip"], check=False, quiet=True)
-        blob = (r.stdout + r.stderr).lower()
-        if r.returncode != 0 and ("already" in blob or "exists" in blob):
+        if dataset_exists(ds_id):
             print(f"updating dataset {ds_id}")
-            run(["kaggle", "datasets", "version", "-p", str(folder), "-m", message, "--dir-mode", "skip"])
-        elif r.returncode != 0:
-            print(r.stdout, r.stderr)
-            raise SystemExit(r.returncode)
+            run(["kaggle", "datasets", "version", "-p", str(folder), "-m", message, "--dir-mode", "zip"])
         else:
+            run(["kaggle", "datasets", "create", "-p", str(folder), "--dir-mode", "zip"])
             print(f"created dataset {ds_id}")
     finally:
         if wrote_meta:
@@ -110,14 +112,30 @@ def stage_raw(raw_dir):
     return dst
 
 
+def stage_wheels():
+    dst = STAGE / "wheels"
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True)
+    run(["python", "-m", "pip", "download", "anyascii", "jellyfish", "rapidfuzz",
+         "--only-binary=:all:", "--python-version", "3.12", "--platform", "manylinux2014_x86_64",
+         "--implementation", "cp", "--abi", "cp312", "-d", str(dst), "--no-deps"])
+    return dst
+
+
 def cmd_datasets(args):
-    sync_dataset(RAW_ID, "amz-er-2026-raw", stage_raw(args.raw_dir), "raw challenge TSVs")
-    code_dir = STAGE / "code"
-    if (code_dir / "src").exists():
-        shutil.rmtree(code_dir / "src")
-    code_dir.mkdir(parents=True, exist_ok=True)
-    shutil.copytree(CODE_SRC, code_dir / "src")
-    sync_dataset(CODE_ID, "amz-er-2026-code", code_dir, "pipeline source")
+    only = set(args.only) if args.only else {"raw", "code", "wheels"}
+    if "raw" in only:
+        sync_dataset(RAW_ID, "amz-er-2026-raw", stage_raw(args.raw_dir), "raw challenge TSVs")
+    if "code" in only:
+        code_dir = STAGE / "code"
+        if (code_dir / "src").exists():
+            shutil.rmtree(code_dir / "src")
+        code_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(CODE_SRC, code_dir / "src")
+        sync_dataset(CODE_ID, "amz-er-2026-code", code_dir, "pipeline source")
+    if "wheels" in only:
+        sync_dataset(WHEELS_ID, "amz-er-2026-wheels", stage_wheels(), "offline dependency wheels")
 
 
 def kernel_dir(spec, needs):
@@ -134,7 +152,7 @@ def kernel_dir(spec, needs):
         "enable_gpu": spec["gpu"],
         "enable_internet": True,
         "enable_tpu": False,
-        "dataset_sources": [RAW_ID, CODE_ID],
+        "dataset_sources": [RAW_ID, CODE_ID, WHEELS_ID],
         "kernel_sources": [f"{USER}/{s}" for s in needs],
         "competition_sources": [],
     }, indent=2), encoding="utf-8")
@@ -203,6 +221,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("datasets")
     d.add_argument("--raw-dir", default=str(DEFAULT_RAW))
+    d.add_argument("--only", nargs="*", choices=["raw", "code", "wheels"])
     d.set_defaults(func=cmd_datasets)
     p = sub.add_parser("push")
     p.add_argument("--plan", choices=["v1", "full"], default="full")
