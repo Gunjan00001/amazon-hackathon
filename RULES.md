@@ -57,6 +57,11 @@ python utils/validate_submission.py `
     --matching output/matching_results.tsv `
     --candidate output/candidate_pairs.tsv `
     --test-dir dataset/test
+
+# 4) Kaggle notebook chain (manual web-UI runs, in this order):
+#    N1 clean -> N2 block -> N3 embed (GPU) -> N4 GBDT -> N5 rerank (GPU) -> N6 decide+validate
+#    Per-notebook inputs/outputs and paste-back metrics: see the design doc
+#    (docs/superpowers/specs/2026-09-25-kaggle-cascade-design.md).
 ```
 
 The validator is a gate: exit 0 (`PASS`) required before any submission.
@@ -67,4 +72,15 @@ The validator is a gate: exit 0 (`PASS`) required before any submission.
 2. Never commit secrets, tokens, or credentials.
 3. Never hand-edit `graphify-out/` outputs; regenerate them with the graphify pipeline.
 4. Keep `main` in a state where the documented commands work.
-5. Current version: **0.1.0** (initial docs, EDA and benchmark tooling, knowledge graph).
+5. Current version: **0.2.0** (Kaggle-only compute rules and the cascade C+B design; 0.1.0 = initial docs, EDA and benchmark tooling, knowledge graph).
+
+## 6. Compute rules — Kaggle-only
+
+1. All training and GPU inference runs on Kaggle: Kaggle Notebooks + Kaggle Datasets only. The local machine is for editing, CPU-only prep/validation, and preparing notebook runs.
+2. Kaggle accelerators only; baseline target is T4 x2 (fp16), L4 x4 as optional speedup. Free tier gives ~30 GPU-h/week (9-12 h session cap, ~20 GB notebook outputs): every GPU stage must cache its artifacts as a versioned Kaggle Dataset output so a re-run never repeats GPU work.
+3. The 7 challenge TSVs are mirrored to a **private** Kaggle Dataset `amz-er-2026-raw` (never public, never in git). Canonical local data stays at `D:\Amazon project\DATA\`; code reads `DATA_DIR` from env/config, no hard-coded paths.
+4. Runtime model downloads on internet-enabled notebooks are allowed, but every model must be MIT/Apache-2.0 and <=8B params; pin exact model IDs + revisions in requirements/metadata.
+5. Each pipeline stage is one notebook (N1 cleaning, N2 blocking, N3 embed, N4 GBDT, N5 rerank, N6 decision+outputs) with pinned dependency versions; artifacts flow dataset -> notebook -> dataset so runs are reproducible.
+6. `kaggle.json`, notebook secrets, and tokens are never committed.
+7. Validate outputs locally with `utils/validate_submission.py` before any upload; record notebook + dataset versions in the version log (see §5).
+8. Data cleaning and feature engineering are first-class pipeline code: normalization, transliteration, address parsing, and every pair feature are versioned, cached Kaggle Dataset artifacts, and the SAME cleaning + feature code runs for train, validation and test. No label-derived features; validation splits stay grouped by Source 1 entity with a held-out country (France proxy).
