@@ -17,3 +17,7 @@ tools/eda_cache/
 graphify-out/cache/
 graphify-out/.graphify_*
 output/**/*.tsv
+
+# Pipeline artifacts (regenerated on Kaggle)
+artifacts/
+submission/staging/

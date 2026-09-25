@@ -17,7 +17,7 @@
 - The same cleaning + feature code runs for train/validation/test; splits grouped by `source1_entity_id`; no label-derived features; held-out country for France-proxy validation.
 - Models must be MIT/Apache-2.0 and <=8B parameters; pin revisions.
 - No comments in code unless they explain a non-obvious constraint.
-- Commit after every task; push to `origin main` (`https://github.com/Gunjan00001/amazon-hackathon.git`); tags use `major.minor.bugs`.
+- Commit after every task; push to `origin Approach-2` (`https://github.com/Gunjan00001/amazon-hackathon.git`); tags use `major.minor.bugs`.
 - Unit tests must pass before each commit.
 
 ## File Structure
@@ -1130,7 +1130,7 @@ Expected: `PASS`, exit 0. Fix and rerun until PASS.
 git add README.md RULES.md
 git commit -m "release: validated 1.0.0 submission outputs and docs"
 git tag 1.0.0
-git push origin main
+git push origin Approach-2
 git push origin 1.0.0
 ```
 
