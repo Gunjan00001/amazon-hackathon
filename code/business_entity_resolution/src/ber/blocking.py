@@ -40,9 +40,14 @@ def mid_blocking_tokens(row):
     return _row_keys(row["business_name"], row["business_address"], row["country"])
 
 
-def blocking_recall(pairs, labels):
-    got = {(int(a), int(b)) for a, b in zip(pairs["s1_idx"], pairs["mid_idx"])}
-    return len(got & labels) / max(1, len(labels))
+def blocking_recall(pairs, labels, offset=10 ** 9):
+    if not labels:
+        return 0.0
+    a = pairs["s1_idx"].to_numpy(dtype="int64")
+    b = pairs["mid_idx"].to_numpy(dtype="int64")
+    lk = np.fromiter((int(i) * offset + int(j) for i, j in labels), dtype="int64", count=len(labels))
+    hits = int(np.isin(a * offset + b, lk).sum())
+    return hits / len(labels)
 
 
 def _counts(keys, field):
