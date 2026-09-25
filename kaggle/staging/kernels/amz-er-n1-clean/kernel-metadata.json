@@ -1,0 +1,17 @@
+{
+  "id": "gunjan00001/amz-er-n1-clean",
+  "title": "amz-er-n1-clean",
+  "code_file": "N1_clean.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "enable_tpu": false,
+  "dataset_sources": [
+    "gunjan00001/amz-er-2026-raw",
+    "gunjan00001/amz-er-2026-code"
+  ],
+  "kernel_sources": [],
+  "competition_sources": []
+}

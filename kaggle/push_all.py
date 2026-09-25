@@ -11,13 +11,14 @@ Usage:
 """
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import time
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
-USER = "gunjan00001"
+USER = "gunjanpal001"
 STAGE = REPO / "kaggle" / "staging"
 NBS = REPO / "kaggle" / "notebooks"
 CODE_SRC = REPO / "code" / "business_entity_resolution" / "src"
@@ -78,11 +79,11 @@ def sync_dataset(ds_id, title, folder, message):
             "licenses": [{"name": "unknown"}], "isPrivate": True,
         }, indent=2), encoding="utf-8")
     try:
-        r = run(["kaggle", "datasets", "create", "-p", str(folder), "--dir-mode", "zip"], check=False, quiet=True)
+        r = run(["kaggle", "datasets", "create", "-p", str(folder), "--dir-mode", "skip"], check=False, quiet=True)
         blob = (r.stdout + r.stderr).lower()
         if r.returncode != 0 and ("already" in blob or "exists" in blob):
             print(f"updating dataset {ds_id}")
-            run(["kaggle", "datasets", "version", "-p", str(folder), "-m", message, "--dir-mode", "zip"])
+            run(["kaggle", "datasets", "version", "-p", str(folder), "-m", message, "--dir-mode", "skip"])
         elif r.returncode != 0:
             print(r.stdout, r.stderr)
             raise SystemExit(r.returncode)
@@ -93,8 +94,24 @@ def sync_dataset(ds_id, title, folder, message):
             meta.unlink(missing_ok=True)
 
 
+def stage_raw(raw_dir):
+    src = Path(raw_dir)
+    dst = STAGE / "raw"
+    if dst.exists():
+        shutil.rmtree(dst)
+    dst.mkdir(parents=True)
+    for split in ("train", "test"):
+        (dst / split).mkdir()
+        for f in sorted((src / split).glob("*.tsv")):
+            try:
+                os.link(f, dst / split / f.name)
+            except OSError:
+                shutil.copy2(f, dst / split / f.name)
+    return dst
+
+
 def cmd_datasets(args):
-    sync_dataset(RAW_ID, "amz-er-2026-raw", args.raw_dir, "raw challenge TSVs")
+    sync_dataset(RAW_ID, "amz-er-2026-raw", stage_raw(args.raw_dir), "raw challenge TSVs")
     code_dir = STAGE / "code"
     if (code_dir / "src").exists():
         shutil.rmtree(code_dir / "src")

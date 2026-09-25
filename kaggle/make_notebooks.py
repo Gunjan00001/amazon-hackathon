@@ -34,13 +34,17 @@ import glob
 import os
 import subprocess
 import sys
+from pathlib import Path
 
-CODE = "{code}"
 RAW = "{raw}"
 ART = "{art}"
 os.environ["BER_DATA_DIR"] = RAW
 os.environ["BER_ARTIFACT_DIR"] = ART
+
+_hits = sorted(glob.glob("/kaggle/input/amz-er-2026-code/**/ber/__init__.py", recursive=True))
+CODE = str(Path(_hits[0]).parent.parent) if _hits else "/kaggle/input/amz-er-2026-code/src"
 sys.path.insert(0, CODE)
+print("code path:", CODE)
 
 
 def find(sub):
@@ -118,7 +122,7 @@ def make_notebook(nb_id, slug, title, gpu, module, args):
     cells = [
         md_cell(header),
         code_cell(f"!pip -q install {PIP[nb_id]}"),
-        code_cell(FIND_INPUT.format(code=CODE_PATH, raw=RAW_PATH, art=ARTIFACT_PATH)),
+        code_cell(FIND_INPUT.format(raw=RAW_PATH, art=ARTIFACT_PATH)),
         code_cell(run_expression(module, args)),
         code_cell(PRINT),
     ]
