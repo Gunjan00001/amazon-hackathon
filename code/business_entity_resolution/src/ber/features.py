@@ -76,34 +76,37 @@ def classical_features(frame) -> np.ndarray:
     return np.column_stack([cols[c] for c in CLASSICAL_FEATURES]).astype("float32")
 
 
-def build_pair_frame(s1_df: pd.DataFrame, mid_df: pd.DataFrame, pairs: pd.DataFrame) -> pd.DataFrame:
-    s1_name = s1_df["business_name"].map(normalize_name).to_numpy(dtype=object)
-    s1_fold_name = np.array([fold_ascii(x) for x in s1_name], dtype=object)
-    s1_addr = s1_df["business_address"].map(normalize_address).to_numpy(dtype=object)
-    s1_fold_addr = np.array([fold_ascii(x) for x in s1_addr], dtype=object)
-    s1_country = s1_df["country"].str.strip().str.lower().to_numpy(dtype=object)
+def prepare_records(df: pd.DataFrame) -> dict:
+    name = df["business_name"].map(normalize_name).to_numpy(dtype=object)
+    addr = df["business_address"].map(normalize_address).to_numpy(dtype=object)
+    return {
+        "name": name,
+        "fold_name": np.array([fold_ascii(x) for x in name], dtype=object),
+        "addr": addr,
+        "fold_addr": np.array([fold_ascii(x) for x in addr], dtype=object),
+        "country": df["country"].str.strip().str.lower().to_numpy(dtype=object),
+        "postal": np.array([postal_key(x) or "" for x in addr], dtype=object),
+        "is_s2": df["entity_id"].str.startswith("S2-").to_numpy(),
+    }
 
-    mid_name = mid_df["business_name"].map(normalize_name).to_numpy(dtype=object)
-    mid_fold_name = np.array([fold_ascii(x) for x in mid_name], dtype=object)
-    mid_addr = mid_df["business_address"].map(normalize_address).to_numpy(dtype=object)
-    mid_fold_addr = np.array([fold_ascii(x) for x in mid_addr], dtype=object)
-    mid_country = mid_df["country"].str.strip().str.lower().to_numpy(dtype=object)
-    mid_is_s2 = mid_df["entity_id"].str.startswith("S2-").to_numpy()
 
+def build_pair_frame_prepared(ps1: dict, pmid: dict, pairs: pd.DataFrame) -> pd.DataFrame:
     i = pairs["s1_idx"].to_numpy()
     j = pairs["mid_idx"].to_numpy()
-    frame = pd.DataFrame({
+    return pd.DataFrame({
         "s1_idx": i, "mid_idx": j, "pass": pairs["pass"].to_numpy(),
-        "n1": s1_name[i], "n1_fold": s1_fold_name[i],
-        "n2": mid_name[j], "n2_fold": mid_fold_name[j],
-        "a1": s1_addr[i], "a1_fold": s1_fold_addr[i],
-        "a2": mid_addr[j], "a2_fold": mid_fold_addr[j],
-        "c1": s1_country[i], "c2": mid_country[j],
-        "p1": np.array([postal_key(x) or "" for x in s1_addr], dtype=object)[i],
-        "p2": np.array([postal_key(x) or "" for x in mid_addr], dtype=object)[j],
-        "is_s2": mid_is_s2[j],
+        "n1": ps1["name"][i], "n1_fold": ps1["fold_name"][i],
+        "n2": pmid["name"][j], "n2_fold": pmid["fold_name"][j],
+        "a1": ps1["addr"][i], "a1_fold": ps1["fold_addr"][i],
+        "a2": pmid["addr"][j], "a2_fold": pmid["fold_addr"][j],
+        "c1": ps1["country"][i], "c2": pmid["country"][j],
+        "p1": ps1["postal"][i], "p2": pmid["postal"][j],
+        "is_s2": pmid["is_s2"][j],
     })
-    return frame
+
+
+def build_pair_frame(s1_df: pd.DataFrame, mid_df: pd.DataFrame, pairs: pd.DataFrame) -> pd.DataFrame:
+    return build_pair_frame_prepared(prepare_records(s1_df), prepare_records(mid_df), pairs)
 
 
 def structural_features(frame) -> np.ndarray:

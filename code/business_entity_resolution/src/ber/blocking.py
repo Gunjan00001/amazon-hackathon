@@ -49,18 +49,26 @@ def _counts(keys, field):
     return counts
 
 
-def generate_candidates(s1_df, mid_df, max_candidates_per_s1=200, max_postings=20000):
-    s1_keys = [_row_keys(r.business_name, r.business_address, r.country) for r in s1_df.itertuples()]
-    mid_keys = [_row_keys(r.business_name, r.business_address, r.country) for r in mid_df.itertuples()]
+def _iter_keys(df):
+    for r in df.itertuples(index=False):
+        yield _row_keys(r.business_name, r.business_address, r.country)
 
-    token_df = _counts(mid_keys, "tokens")
-    addr_df = _counts(mid_keys, "addr_tokens")
+
+def generate_candidates(s1_df, mid_df, max_candidates_per_s1=200, max_postings=20000):
+    token_df = defaultdict(int)
+    addr_df = defaultdict(int)
+    for k in _iter_keys(mid_df):
+        c = k["country"]
+        for t in k["tokens"]:
+            token_df[(c, t)] += 1
+        for t in k["addr_tokens"]:
+            addr_df[(c, t)] += 1
 
     postal_index = defaultdict(list)
     phonetic_index = defaultdict(list)
     token_index = defaultdict(list)
     addr_index = defaultdict(list)
-    for i, k in enumerate(mid_keys):
+    for i, k in enumerate(_iter_keys(mid_df)):
         c = k["country"]
         if k["postal"]:
             postal_index[(c, k["postal"])].append(i)
@@ -74,7 +82,7 @@ def generate_candidates(s1_df, mid_df, max_candidates_per_s1=200, max_postings=2
                 addr_index[(c, t)].append(i)
 
     rows = []
-    for i, k in enumerate(s1_keys):
+    for i, k in enumerate(_iter_keys(s1_df)):
         c = k["country"]
         seen = set()
         budget = max_candidates_per_s1

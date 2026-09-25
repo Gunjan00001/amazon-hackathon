@@ -25,9 +25,14 @@ def train_model(X, y, groups, params=None):
               callbacks=[early_stopping(50, verbose=False)])
     scores = model.predict_proba(X[va])[:, 1]
     f, th = best_threshold(groups[va], y[va], scores)
+    if len(np.unique(y[va])) < 2:
+        auc = ap = float("nan")
+    else:
+        auc = float(roc_auc_score(y[va], scores))
+        ap = float(average_precision_score(y[va], scores))
     metrics = {
-        "pair_auc": float(roc_auc_score(y[va], scores)),
-        "average_precision": float(average_precision_score(y[va], scores)),
+        "pair_auc": auc,
+        "average_precision": ap,
         "best_macro_f05": float(f),
         "best_threshold": float(th),
         "best_iteration": int(model.best_iteration_ or model.n_estimators),
