@@ -28,15 +28,30 @@ RAW_ID = f"{USER}/amz-er-2026-raw"
 CODE_ID = f"{USER}/amz-er-2026-code"
 
 KERNELS = [
-    {"nb": "N1", "file": "N1_clean", "slug": "amz-er-n1-clean", "gpu": False, "needs": []},
-    {"nb": "N2", "file": "N2_block", "slug": "amz-er-n2-block", "gpu": False, "needs": ["amz-er-n1-clean"]},
-    {"nb": "N3", "file": "N3_embed", "slug": "amz-er-n3-embed", "gpu": True, "needs": ["amz-er-n1-clean"]},
-    {"nb": "N4", "file": "N4_train_gbdt", "slug": "amz-er-n4-train-gbdt", "gpu": False,
-     "needs": ["amz-er-n1-clean", "amz-er-n2-block", "amz-er-n3-embed"]},
-    {"nb": "N5", "file": "N5_rerank", "slug": "amz-er-n5-rerank", "gpu": True, "needs": ["amz-er-n4-train-gbdt"]},
-    {"nb": "N6", "file": "N6_decide", "slug": "amz-er-n6-decide", "gpu": False,
-     "needs": ["amz-er-n2-block", "amz-er-n4-train-gbdt", "amz-er-n5-rerank"]},
+    {"nb": "N1", "file": "N1_clean", "slug": "amz-er-n1-clean", "gpu": False},
+    {"nb": "N2", "file": "N2_block", "slug": "amz-er-n2-block", "gpu": False},
+    {"nb": "N3", "file": "N3_embed", "slug": "amz-er-n3-embed", "gpu": True},
+    {"nb": "N4", "file": "N4_train_gbdt", "slug": "amz-er-n4-train-gbdt", "gpu": False},
+    {"nb": "N5", "file": "N5_rerank", "slug": "amz-er-n5-rerank", "gpu": True},
+    {"nb": "N6", "file": "N6_decide", "slug": "amz-er-n6-decide", "gpu": False},
 ]
+
+PLANS = {
+    "v1": [
+        ("N1", []),
+        ("N2", ["amz-er-n1-clean"]),
+        ("N4", ["amz-er-n1-clean", "amz-er-n2-block"]),
+        ("N6", ["amz-er-n2-block", "amz-er-n4-train-gbdt"]),
+    ],
+    "full": [
+        ("N1", []),
+        ("N2", ["amz-er-n1-clean"]),
+        ("N3", ["amz-er-n1-clean"]),
+        ("N4", ["amz-er-n1-clean", "amz-er-n2-block", "amz-er-n3-embed"]),
+        ("N5", ["amz-er-n4-train-gbdt"]),
+        ("N6", ["amz-er-n2-block", "amz-er-n4-train-gbdt", "amz-er-n5-rerank"]),
+    ],
+}
 
 
 def run(cmd, check=True, quiet=False):
@@ -88,7 +103,7 @@ def cmd_datasets(args):
     sync_dataset(CODE_ID, "amz-er-2026-code", code_dir, "pipeline source")
 
 
-def kernel_dir(spec):
+def kernel_dir(spec, needs):
     kdir = STAGE / "kernels" / spec["slug"]
     kdir.mkdir(parents=True, exist_ok=True)
     shutil.copy2(NBS / f"{spec['file']}.ipynb", kdir / f"{spec['file']}.ipynb")
@@ -103,7 +118,7 @@ def kernel_dir(spec):
         "enable_internet": True,
         "enable_tpu": False,
         "dataset_sources": [RAW_ID, CODE_ID],
-        "kernel_sources": [f"{USER}/{s}" for s in spec["needs"]],
+        "kernel_sources": [f"{USER}/{s}" for s in needs],
         "competition_sources": [],
     }, indent=2), encoding="utf-8")
     return kdir
@@ -129,11 +144,13 @@ def wait_kernel(slug, timeout_s=21600, poll_s=60):
 
 
 def cmd_push(args):
+    by_nb = {s["nb"]: s for s in KERNELS}
     only = set(args.only) if args.only else None
-    for spec in KERNELS:
-        if only and spec["nb"] not in only:
+    for nb, needs in PLANS[args.plan]:
+        if only and nb not in only:
             continue
-        run(["kaggle", "kernels", "push", "-p", str(kernel_dir(spec))])
+        spec = by_nb[nb]
+        run(["kaggle", "kernels", "push", "-p", str(kernel_dir(spec, needs))])
         if args.wait:
             ok = wait_kernel(spec["slug"])
             if not ok:
@@ -171,6 +188,7 @@ def main():
     d.add_argument("--raw-dir", default=str(DEFAULT_RAW))
     d.set_defaults(func=cmd_datasets)
     p = sub.add_parser("push")
+    p.add_argument("--plan", choices=["v1", "full"], default="full")
     p.add_argument("--only", nargs="*")
     p.add_argument("--wait", action="store_true")
     p.set_defaults(func=cmd_push)
