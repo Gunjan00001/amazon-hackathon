@@ -408,7 +408,8 @@ def split_id_list(s: str) -> list[str]:
 
 
 def _id_sort_key(eid: str):
-    return (eid[:3], int(_NUM_RE.search(eid).group(1)))
+    prefix, _, num = eid.partition("-")
+    return (prefix, int(num) if num.isdigit() else 0)
 
 
 def format_id_list(ids) -> str:
