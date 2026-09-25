@@ -21,3 +21,4 @@ output/**/*.tsv
 # Pipeline artifacts (regenerated on Kaggle)
 artifacts/
 submission/staging/
+kaggle/staging/
