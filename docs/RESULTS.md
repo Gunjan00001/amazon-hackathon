@@ -84,6 +84,19 @@ Per PROBLEM_STATEMENT.md §13, the leaderboard submission is **only** `output/ma
 - `candidate_pairs.tsv` is not scored on the leaderboard; it belongs to the final submission zip.
 - **Submitted 26 Sep 2026, 02:43 PM IST — result: macro F0.5 = 0.811 (Evaluated).**
 
+## Matcher vs blocking headroom (`DATA/reports/eval_oracle.json`)
+
+Oracle = ground-truth pairs intersected with the candidate set (prediction precision fixed at 1.0,
+i.e. the best a perfect matcher could do on the current candidates), scored macro F0.5 over the
+held-out S1 groups with the singleton rule.
+
+- **Oracle macro F0.5 = 0.9122** vs current baseline 0.8488 → matcher headroom **+0.0634**.
+- Pair recall (= accepted blocking ceiling) 0.8142; 1,240,887 / 1,524,017 truth pairs found.
+- 17,785 / 415,317 entities (4.28%) have truth but zero found candidates; mean per-entity recall 0.8139.
+- Per country: US 0.9468, India 0.8602 — India carries the most matcher headroom.
+- Decision: headroom > 0.05 → **matcher work (Tasks 2–3) is the lever**; blocking (Task 9) stays
+  conditional.
+
 ## Next milestone (M2) — target
 
 Plan: `docs/superpowers/plans/2026-09-26-precision-colab.md`. Headroom analysis: the blocking ceiling

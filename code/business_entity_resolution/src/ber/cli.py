@@ -1,4 +1,5 @@
 import argparse
+import json
 from pathlib import Path
 
 from ber.blocking import run_block
@@ -17,7 +18,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog="ber")
     parser.add_argument(
         "command",
-        choices=["prepare", "block", "audit", "features", "train", "tune", "predict", "outputs", "evaluate", "validation", "loo", "all"],
+        choices=["prepare", "block", "audit", "features", "train", "tune", "predict", "outputs", "evaluate", "validation", "loo", "diagnose", "all"],
     )
     parser.add_argument("--config", default=_default_config())
     parser.add_argument("--split", default="both", choices=["train", "test", "both"])
@@ -89,6 +90,10 @@ def main(argv=None):
         from ber.validation import evaluate_loo
 
         print(evaluate_loo(cfg))
+    if args.command in ("diagnose",):
+        from ber.diagnostic import run_diagnostic
+
+        print(json.dumps(run_diagnostic(cfg), indent=2))
     return 0
 
 

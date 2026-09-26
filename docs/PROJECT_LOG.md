@@ -58,3 +58,10 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - Split decision: phases 0–1 and 5 local (CPU/data-bound, faster locally); phases 2–3 on Colab T4
   (embeddings + optional cross-encoder); phase 4 (MinHash-LSH re-block) conditional.
 
+## 2026-09-26 — M2 Task 1: oracle diagnostic
+
+- `.venv\Scripts\python.exe -m ber.cli diagnose` → `DATA/reports/eval_oracle.json`.
+- Oracle macro F0.5 **0.9122** (US 0.9468 / India 0.8602); blocking pair recall 0.8142; 4.28% of
+  truth-bearing entities have zero found candidates. Headroom over the 0.8488 baseline is **+0.0634**
+  (> 0.05) → matcher precision/recall is the lever; re-blocking stays conditional.
+
