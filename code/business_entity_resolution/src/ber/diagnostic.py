@@ -35,9 +35,12 @@ def _oracle_scores(ntrue, nfound):
     return scores
 
 
-def run_diagnostic(cfg):
+def run_diagnostic(cfg, candidates_path=None, out_path=None, label=None):
     data = Path(cfg.data_dir)
-    candidates = (data / "candidates" / "train_candidates.parquet").as_posix()
+    if candidates_path is not None:
+        candidates = Path(candidates_path).as_posix()
+    else:
+        candidates = (data / "candidates" / "train_candidates.parquet").as_posix()
     gt = (data / "processed" / "train_ground_truth.parquet").as_posix()
     valids = val_s1_ids_path(cfg)
 
@@ -48,6 +51,10 @@ def run_diagnostic(cfg):
     con.execute(f"SET temp_directory='{(data / 'tmp').as_posix()}'")
     con.execute("PRAGMA max_temp_directory_size='50GiB'")
     con.execute(f"CREATE TEMP TABLE valids AS SELECT s1_id FROM read_parquet('{valids.as_posix()}')")
+    n_cand_total = con.execute(f"SELECT COUNT(*) FROM read_parquet('{candidates}')").fetchone()[0]
+    n_cand_val = con.execute(
+        f"SELECT COUNT(*) FROM read_parquet('{candidates}') c SEMI JOIN valids v ON v.s1_id = c.s1_id"
+    ).fetchone()[0]
     con.execute(
         f"""
         CREATE TEMP TABLE tcount AS
@@ -94,32 +101,44 @@ def run_diagnostic(cfg):
 
     country_by_s1 = _country_of_source1(cfg, "train")
     per_country = {}
+    recall_by_country = {}
     for country in sorted(set(country_by_s1.get(sid, "") for sid in ids)):
         mask = np.array([country_by_s1.get(sid, "") == country for sid in ids])
         if mask.any():
             per_country[country] = float(scores[mask].mean())
+            n_t = int(ntrue[mask].sum())
+            n_f = int(nfound[mask].sum())
+            recall_by_country[country] = (n_f / n_t) if n_t else 0.0
 
+    candidates_per_s1 = (n_cand_val / len(ids)) if len(ids) else 0.0
     report = {
         "val_s1": int(len(ids)),
         "oracle_macro_f05": float(scores.mean()),
         "oracle_by_country": per_country,
         "pair_recall": (found_truth / total_truth) if total_truth else 0.0,
+        "recall_by_country": recall_by_country,
         "total_truth_pairs": total_truth,
         "found_truth_pairs": found_truth,
         "entities_with_truth": int(has_true.sum()),
         "entities_with_zero_found": int((has_true & (nfound == 0)).sum()),
         "share_entities_with_zero_found": float((has_true & (nfound == 0)).sum() / has_true.sum()) if has_true.any() else 0.0,
         "mean_entities_recall": float((nfound[has_true] / ntrue[has_true]).mean()) if has_true.any() else 0.0,
-        "baseline_full_candidates": 0.8488,
+        "total_candidates": int(n_cand_total),
+        "heldout_candidates": int(n_cand_val),
+        "candidates_per_s1": float(candidates_per_s1),
+        "baseline_heldout_f05": 0.8577,
         "note": "oracle = ground-truth pairs intersected with candidates (prediction precision fixed at 1.0); held-out S1 groups",
     }
-    out = data / "reports" / "eval_oracle.json"
+    if label:
+        report["label"] = label
+    out = Path(out_path) if out_path is not None else (data / "reports" / "eval_oracle.json")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(report, indent=2), encoding="utf-8")
     print(
         f"[diagnose] oracle_macro_f05={report['oracle_macro_f05']:.4f} "
-        f"(baseline 0.8488, headroom {report['oracle_macro_f05'] - 0.8488:+.4f}) "
+        f"(baseline 0.8577, headroom {report['oracle_macro_f05'] - 0.8577:+.4f}) "
         f"pair_recall={report['pair_recall']:.4f} "
+        f"cand_per_s1={candidates_per_s1:.1f} "
         f"zero_found={report['entities_with_zero_found']:,}/{report['entities_with_truth']:,} "
         f"({report['share_entities_with_zero_found']:.3%}) "
         f"by_country={ {k: round(v, 4) for k, v in per_country.items()} }",
