@@ -108,3 +108,18 @@ Each entry: decision, context, alternatives, and consequence.
   char-3 uncalibrated held-out 0.8574 → **0.8577** (US 0.8983 / India 0.7968). France falls back to
   the 0.95 global threshold.
 
+## D16 — Multilingual embedding cosine: tried at 64 dims, not adopted
+- **Context:** Task 6/7 of M2 aimed to add per-pair `emb_name_cos`/`emb_addr_cos` from
+  `intfloat/multilingual-e5-small` on the free Colab T4.
+- **Constraint found:** random disk reads over the 18 GB fp16 embedding files on free Colab were
+  ~37× amplified (~60 MB/s; ~28 GB read for one 250k-pair batch) — the straightforward memmap-gather
+  path was unusable. A single sequential pass projecting 384 → 64 dims (seeded, cosine-preserving)
+  into RAM was the only way to finish in-session.
+- **Decision:** the 64-dim embeddings are noise-dominated: calibrated held-out **0.8570** < Phase-1
+  0.8577, so embeddings are **not adopted**; `models/` and `FEATURE_ORDER` revert to 1.4.1. The
+  export/import/merge tooling and `notebooks/colab_embeddings.ipynb` are kept.
+- **Consequence / next:** do not conclude embeddings are useless from this alone — re-run the full
+  384-dim cosine on a host with adequate RAM/local disk (Kaggle T4x2) before re-testing the gate. The
+  matcher still has headroom (oracle 0.9122) and the blocking ceiling (0.8142) remains the eventual
+  bound.
+

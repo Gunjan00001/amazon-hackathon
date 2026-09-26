@@ -55,6 +55,23 @@ Gate: 0.8577 > 0.8488 and India 0.7968 > 0.788 → **adopted** (tag `1.4.1`; `1.
 falls back to the 0.95 global threshold. Remaining M2 headroom is in the matcher (oracle 0.9122) and,
 beyond that, the 0.8142 blocking ceiling.
 
+## M2 (Tasks 6–7) — multilingual embeddings: tried, rejected
+
+`intfloat/multilingual-e5-small` (MIT) on the free Colab T4 encoded all 24,229,173 entities; per-pair
+`emb_name_cos` / `emb_addr_cos` were merged into train + valfull and the matcher was retrained
+(469 trees). Because free-Colab random disk reads over the 18 GB fp16 embedding files were ~37×
+amplified, the embeddings were projected 384 → 64 dims (seeded random projection, cosine-preserving)
+to fit in RAM — a deviation from the planned 384-dim cosine.
+
+- Uncalibrated held-out: 0.8568 (US 0.8972 / India 0.7962).
+- Calibrated held-out (`DATA/reports/eval_calibrated.json`): **0.8570** (US 0.8977 / India 0.7961).
+- Gate: 0.8570 < Phase-1 0.8577 → **not adopted**; `models/` and `FEATURE_ORDER` reverted to 1.4.1.
+
+Conclusion: at 64 dims the embedding signal does not beat the char-3-only matcher. A future attempt
+should use the full 384-dim cosine on a host with enough RAM/local disk (e.g. Kaggle T4x2) before
+concluding embeddings are unhelpful.
+
+
 ## 4:1 sampled details (`DATA/reports/eval_marks.json`)
 
 - Threshold-only 0.98033 @ 0.700; one-to-one 0.98075 @ 0.675.

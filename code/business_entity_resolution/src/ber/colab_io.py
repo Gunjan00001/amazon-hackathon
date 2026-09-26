@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import duckdb
@@ -6,6 +7,8 @@ import pandas as pd
 ENTITY_COLUMNS = ["entity_id", "name_norm", "name_roman", "addr_norm"]
 SPLITS = ("train", "valfull", "test")
 COSINE_COLUMNS = ("emb_name_cos", "emb_addr_cos")
+EMB_FEATURES = ("emb_name_cos", "emb_addr_cos")
+EMB_MISSING = -1.0
 
 
 def _configure(con, data):
@@ -85,3 +88,54 @@ def import_cosine(cfg, split, columns=COSINE_COLUMNS):
     if missing:
         raise ValueError(f"{path.name} missing columns: {missing}")
     return frame[["s1_id", "cand_id", *columns]]
+
+
+def _feature_targets(cfg, split):
+    data = Path(cfg.data_dir)
+    combined = data / "features" / f"{split}.parquet"
+    if combined.exists():
+        return [combined]
+    parts_dir = data / "tmp" / f"{split}_features"
+    if parts_dir.exists():
+        parts = sorted(parts_dir.glob("*.parquet"))
+        if parts:
+            return parts
+    raise FileNotFoundError(f"no feature parts or combined features for split={split}")
+
+
+def merge_cosine(cfg, split, columns=EMB_FEATURES):
+    data = Path(cfg.data_dir)
+    cos_path = data / "colab_out" / f"cosine_{split}.parquet"
+    if not cos_path.exists():
+        raise FileNotFoundError(cos_path)
+    targets = _feature_targets(cfg, split)
+    con = duckdb.connect()
+    _configure(con, data)
+    con.execute(
+        f"CREATE TEMP TABLE cos AS SELECT s1_id, cand_id, "
+        f"{', '.join(columns)} FROM read_parquet('{cos_path.as_posix()}')"
+    )
+    existing = set()
+    import pyarrow.parquet as pq
+
+    for target in targets:
+        existing.update(pq.ParquetFile(target).schema_arrow.names)
+    drop = [c for c in columns if c in existing]
+    select_features = f"f.* EXCLUDE ({', '.join(drop)})" if drop else "f.*"
+    new_cols = ", ".join(f"COALESCE(c.{c}, {EMB_MISSING}) AS {c}" for c in columns)
+    rows = 0
+    for target in targets:
+        tmp = target.with_suffix(".merged.parquet")
+        con.execute(
+            f"""
+            COPY (
+                SELECT {select_features}, {new_cols}
+                FROM read_parquet('{target.as_posix()}') f
+                LEFT JOIN cos c ON c.s1_id = f.s1_id AND c.cand_id = f.cand_id
+            ) TO '{tmp.as_posix()}' (FORMAT PARQUET, COMPRESSION ZSTD)
+            """
+        )
+        rows += con.execute(f"SELECT COUNT(*) FROM read_parquet('{tmp.as_posix()}')").fetchone()[0]
+        os.replace(tmp, target)
+    con.close()
+    return {"split": split, "rows": int(rows), "parts": len(targets), "columns": list(columns)}

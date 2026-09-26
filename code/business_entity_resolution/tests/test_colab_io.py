@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from ber.colab_io import export_for_colab, import_cosine
+from ber.colab_io import export_for_colab, import_cosine, merge_cosine
 from ber.config import Config
 
 
@@ -79,3 +79,36 @@ def test_colab_export_roundtrip_attaches_cosine(tmp_path):
     row = merged[(merged["s1_id"] == "S1-1") & (merged["cand_id"] == "S2-1")].iloc[0]
     assert row["emb_name_cos"] == 0.9
     assert row["emb_addr_cos"] == 0.7
+
+
+def test_merge_cosine_attaches_and_defaults_missing(tmp_path):
+    cfg = _build_cfg(tmp_path)
+    data = Path(cfg.data_dir)
+    (data / "features").mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        {
+            "s1_id": ["S1-1", "S1-1", "S1-2"],
+            "cand_id": ["S2-1", "S3-1", "S3-1"],
+            "name_char3_cos": [0.5, 0.1, 0.2],
+            "emb_name_cos": [-1.0, -1.0, -1.0],
+            "emb_addr_cos": [-1.0, -1.0, -1.0],
+            "label": [1, 0, 1],
+        }
+    ).to_parquet(data / "features" / "train.parquet", index=False)
+    out_dir = data / "colab_out"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    pd.DataFrame(
+        {"s1_id": ["S1-1"], "cand_id": ["S2-1"], "emb_name_cos": [0.9], "emb_addr_cos": [0.7]}
+    ).to_parquet(out_dir / "cosine_train.parquet", index=False)
+
+    result = merge_cosine(cfg, "train")
+    assert result["rows"] == 3
+
+    frame = pd.read_parquet(data / "features" / "train.parquet")
+    assert "label" in frame.columns
+    assert list(frame.columns).count("emb_name_cos") == 1
+    hit = frame[(frame["s1_id"] == "S1-1") & (frame["cand_id"] == "S2-1")].iloc[0]
+    assert hit["emb_name_cos"] == 0.9
+    assert hit["emb_addr_cos"] == 0.7
+    miss = frame[(frame["s1_id"] == "S1-1") & (frame["cand_id"] == "S3-1")].iloc[0]
+    assert miss["emb_name_cos"] == -1.0

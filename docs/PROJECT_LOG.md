@@ -113,3 +113,22 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - `tests/test_colab_io.py` round-trip (export → cosine → import → key merge); full suite 42 passed.
 - `.gitignore` now excludes `DATA/colab_in/` and `DATA/colab_out/` (never commit data).
 
+## 2026-09-26 — M2 Tasks 6–7: Colab embeddings (tried, NOT adopted)
+
+- Task 6, Colab free T4, `notebooks/colab_embeddings.ipynb`: encoded all 24,229,173 entities ×
+  {name, addr} with `intfloat/multilingual-e5-small` (fp16) in ~110 min; produced
+  `cosine_train.parquet` (30,494,378 rows, 273 MB) and `cosine_valfull.parquet` (60,912,676 rows,
+  487 MB), no NaNs.
+- Environment constraint: free-Colab random disk reads over the 18 GB fp16 embedding files were
+  ~37× amplified (~60 MB/s, ~28 GB read for one 250k-pair batch) and unusable. Worked around with a
+  single sequential pass applying a seeded random projection 384 → 64 dims (cosine-preserving) into
+  RAM. This is a deviation from the plan's 384-dim cosine and is the likely cause of the small loss.
+- Task 7: added `ber.cli colab-merge` to attach `emb_name_cos`/`emb_addr_cos` to train + valfull
+  features; retrained (469 trees, 4:1 val macro F0.5 0.9823); `ber.cli validation --workers 8`
+  (one-to-one 0.8568) and `ber.cli calibrate` (calibrated 0.8570).
+- Gate FAILED: 0.8570 < Phase-1 0.8577 (US 0.8977 vs 0.8983, India 0.7961 vs 0.7968). Not adopted;
+  `models/` reverted to the 1.4.1 baseline, `FEATURE_ORDER` restored to the 36 char-3 feature set.
+- The export/import/merge tooling and the notebook are kept for future runs (e.g. full 384-dim on a
+  host with more RAM/local disk).
+
+

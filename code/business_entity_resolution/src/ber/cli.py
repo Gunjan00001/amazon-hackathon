@@ -18,7 +18,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog="ber")
     parser.add_argument(
         "command",
-        choices=["prepare", "block", "audit", "features", "train", "tune", "calibrate", "predict", "outputs", "evaluate", "validation", "loo", "diagnose", "colab-export", "colab-import", "all"],
+        choices=["prepare", "block", "audit", "features", "train", "tune", "calibrate", "predict", "outputs", "evaluate", "validation", "loo", "diagnose", "colab-export", "colab-import", "colab-merge", "all"],
     )
     parser.add_argument("--config", default=_default_config())
     parser.add_argument("--split", default="both", choices=["train", "test", "both"])
@@ -112,6 +112,15 @@ def main(argv=None):
                 continue
             frame = import_cosine(cfg, split, COSINE_COLUMNS)
             print(f"[colab-import] {split}: {len(frame):,} rows, columns {list(frame.columns)}")
+    if args.command in ("colab-merge",):
+        from ber.colab_io import SPLITS, merge_cosine
+
+        for split in SPLITS:
+            path = Path(cfg.data_dir) / "colab_out" / f"cosine_{split}.parquet"
+            if not path.exists():
+                print(f"[colab-merge] {split}: no {path.name}, skipped")
+                continue
+            print(f"[colab-merge] {merge_cosine(cfg, split)}")
     return 0
 
 
