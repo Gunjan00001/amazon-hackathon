@@ -1,7 +1,12 @@
 """E1 Colab runner — full 384-dim multilingual-e5 embeddings.
 
-Runs a field-at-a-time streaming encode + per-pair cosine on a Colab T4 so the
-18 GB fp16 memmaps are never gathered randomly (the D16 failure mode).
+Field-at-a-time streaming encode + per-pair cosine on a Colab T4 so the 18 GB fp16
+memmaps are never gathered randomly (the D16/F15 failure mode).
+
+Per-pair cosine avoids both known Colab landmines:
+- no column named ``row`` (reserved word -> 0-byte parquet, F16-A); the index uses ``row_idx``
+- no DuckDB ``ORDER BY`` external sort (temp OOM, F16-B); pairs are argsorted in numpy and
+  candidate memmap rows are then read in increasing ``r2`` order (sequential).
 
 Inputs  : /content/colab_in/{entities.parquet,pairs_train.parquet,pairs_valfull.parquet}
 Outputs : /content/colab_out/cosine_{split}.parquet and /content/cosine_e5_out.zip
@@ -16,6 +21,7 @@ import time
 
 import duckdb
 import numpy as np
+import pandas as pd
 import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
@@ -35,6 +41,7 @@ PREFIX = "passage: "
 MAXLEN = 64
 ENCODE_BATCH = 1024
 READ_BATCH = 131072
+COS_CHUNK = 2_000_000
 FIELDS = os.environ.get("E1_FIELDS", "name,addr,entity").split(",")
 SPLITS = [s for s in ("train", "valfull") if os.path.exists(os.path.join(IN, "pairs_%s.parquet" % s))]
 
@@ -60,7 +67,7 @@ if torch.cuda.is_available():
     model = model.to("cuda").half()
 log("model ready cuda", torch.cuda.is_available(), "fields", FIELDS, "splits", SPLITS)
 
-# --- entity index -----------------------------------------------------------
+# --- entity index (row_idx, never "row") ------------------------------------
 INDEX = os.path.join(TMP, "entity_index.parquet")
 if not os.path.exists(INDEX):
     pf = pq.ParquetFile(os.path.join(IN, "entities.parquet"))
@@ -68,7 +75,7 @@ if not os.path.exists(INDEX):
     rows = 0
     for batch in pf.iter_batches(batch_size=1_000_000, columns=["entity_id"]):
         eids = batch.column("entity_id").to_pylist()
-        tbl = pa.table({"entity_id": eids, "row": pa.array(range(rows, rows + len(eids)), pa.int64())})
+        tbl = pa.table({"entity_id": eids, "row_idx": pa.array(range(rows, rows + len(eids)), pa.int64())})
         if w is None:
             w = pq.ParquetWriter(INDEX, tbl.schema, compression="zstd")
         w.write_table(tbl)
@@ -80,7 +87,7 @@ _idx = pq.read_table(INDEX, columns=["entity_id"])
 N = len(_idx)
 _eids = _idx.column("entity_id")
 _s1mask = pc.starts_with(_eids, pattern="S1-").to_numpy(zero_copy_only=False)
-_s1_rows = _idx.column("row").to_numpy()[_s1mask]
+_s1_rows = _idx.column("row_idx").to_numpy()[_s1mask]
 N_S1 = int(_s1mask.sum())
 s1_pos = np.full(N, -1, dtype=np.int32)
 s1_pos[_s1_rows] = np.arange(N_S1, dtype=np.int32)
@@ -147,7 +154,7 @@ def load_s1_embeddings(emb_path):
 
 
 def _configure(con):
-    con.execute("SET memory_limit='6GB'")
+    con.execute("SET memory_limit='8GB'")
     con.execute("SET threads=2")
     con.execute("SET preserve_insertion_order=false")
     con.execute("SET temp_directory='" + TMP + "'")
@@ -164,35 +171,47 @@ def cosine_split(split, emb_path, s1_emb, field, out_dir):
     _configure(con)
     con.execute("CREATE VIEW ei AS SELECT * FROM read_parquet('" + INDEX + "')")
     con.execute("CREATE VIEW pr AS SELECT * FROM read_parquet('" + pairs_path + "')")
-    reader = con.execute(
-        "SELECT p.s1_id, p.cand_id, e1.row AS r1, e2.row AS r2 "
+    con.execute(
+        "CREATE TEMP TABLE pmap AS "
+        "SELECT row_number() OVER () AS pair_idx, p.s1_id, p.cand_id, "
+        "e1.row_idx AS r1, e2.row_idx AS r2 "
         "FROM pr p JOIN ei e1 ON e1.entity_id = p.s1_id "
-        "JOIN ei e2 ON e2.entity_id = p.cand_id ORDER BY e2.row"
-    ).fetch_record_batch(500_000)
+        "JOIN ei e2 ON e2.entity_id = p.cand_id"
+    )
+    n_pairs = con.execute("SELECT COUNT(*) FROM pmap").fetchone()[0]
+    log(split, field, "pairs", n_pairs)
+    arr = con.execute("SELECT r1, r2 FROM pmap").fetchnumpy()
+    r1 = arr["r1"].astype(np.int32)
+    r2 = arr["r2"].astype(np.int32)
+    del arr
+    order = np.argsort(r2, kind="stable").astype(np.int64)
+
     mm = np.load(emb_path, mmap_mode="r")
-    tmp = out + ".tmp"
-    writer = None
-    total = 0
+    cos = np.empty(len(r2), dtype=np.float16)
     t0 = time.time()
-    for rb in reader:
-        r1 = rb.column("r1").to_numpy()
-        r2 = rb.column("r2").to_numpy()
-        a = s1_emb[s1_pos[r1]].astype(np.float32)
-        b = np.asarray(mm[r2]).astype(np.float32)
-        cos = (a * b).sum(1).astype(np.float16)
-        tbl = pa.table({"s1_id": rb.column("s1_id"), "cand_id": rb.column("cand_id"),
-                        field + "_e5_cos": pa.array(cos)})
-        if writer is None:
-            writer = pq.ParquetWriter(tmp, tbl.schema, compression="zstd")
-        writer.write_table(tbl)
-        total += len(tbl)
-        if total % 5_000_000 < 500_000:
-            log(split, field, total, "%.0f/s" % (total / max(time.time() - t0, 1e-9)))
-    if writer is not None:
-        writer.close()
+    for start in range(0, len(order), COS_CHUNK):
+        sel = order[start:start + COS_CHUNK]
+        a = s1_emb[s1_pos[r1[sel]]].astype(np.float32)
+        b = np.asarray(mm[r2[sel]]).astype(np.float32)
+        cos[sel] = (a * b).sum(1).astype(np.float16)
+        del a, b
+        if start % (COS_CHUNK * 10) == 0:
+            done = min(start + COS_CHUNK, len(order))
+            log(split, field, done, "/", len(order), "%.0f/s" % (done / max(time.time() - t0, 1e-9)))
+    del order, r1, r2
+
+    con.register("cosdf", pd.DataFrame({"pair_idx": np.arange(len(cos), dtype=np.int64),
+                                        field + "_e5_cos": cos}))
+    tmp = out + ".tmp"
+    col = field + "_e5_cos"
+    con.execute(
+        "COPY (SELECT p.s1_id, p.cand_id, c." + col + " AS " + col + " "
+        "FROM pmap p JOIN cosdf c ON c.pair_idx = p.pair_idx) "
+        "TO '" + tmp + "' (FORMAT PARQUET, COMPRESSION ZSTD)"
+    )
     os.replace(tmp, out)
     con.close()
-    log("DONE cosine", split, field, total)
+    log("DONE cosine", split, field, len(cos))
     return out
 
 
