@@ -72,7 +72,7 @@ The validator is a gate: exit 0 (`PASS`) required before any submission.
 2. Never commit secrets, tokens, or credentials.
 3. Never hand-edit `graphify-out/` outputs; regenerate them with the graphify pipeline.
 4. Keep `main` in a state where the documented commands work.
-5. Current version: **1.4.0** (M2 plan: local diagnostic + char n-gram features + per-country/singleton calibration, Colab T4 embeddings/rerank; §6 amended to allow Colab). Earlier: 1.3.0 = official leaderboard result (public macro F0.5 **0.811**) recorded + docs/graphify; 1.2.0 = leaderboard submission file committed; 1.1.0 = leaderboard upload guidance + refreshed graphify; 1.0.0 = submission-ready package (validator PASS, held-out 0.8488); 0.2.0 = Kaggle-only compute rules and cascade C+B design; 0.1.0 = initial docs, EDA and benchmark tooling, knowledge graph.
+5. Current version: **1.4.1** (M2 local: oracle diagnostic 0.9122, char-3 TF-IDF features, per-country/singleton calibration; held-out full-candidate 0.8488 → **0.8577**, adopted; Colab T4 embeddings/rerank next). Earlier: 1.4.0 = M2 implementation plan + Colab allowed in §6; 1.3.0 = official leaderboard result (public macro F0.5 **0.811**) recorded + docs/graphify; 1.2.0 = leaderboard submission file committed; 1.1.0 = leaderboard upload guidance + refreshed graphify; 1.0.0 = submission-ready package (validator PASS, held-out 0.8488); 0.2.0 = Kaggle-only compute rules and cascade C+B design; 0.1.0 = initial docs, EDA and benchmark tooling, knowledge graph.
 
 ## 6. Compute rules — local CPU + Kaggle/Colab GPU
 
