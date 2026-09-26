@@ -13,6 +13,7 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 | Dataset EDA | `.venv\Scripts\python.exe tools\eda_dataset.py` | `tools/eda_stats.json`, `DATA/student_resource/dataset/DATASET.md` |
 | GBDT benchmark | `.venv\Scripts\python.exe tools\bench_gbdt.py` | `tools/bench_results.json` |
 | Graphify init | graphify skill on project docs | `graphify-out/` (graph.html, GRAPH_REPORT.md, graph.json) |
+| Graphify refresh | graphify skill over docs + code (53 files) | `graphify-out/` 265 nodes / 563 edges, 40.5x token reduction |
 
 ## Pipeline runs (measured)
 

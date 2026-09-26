@@ -9,3 +9,14 @@ tools/eda_stats.json
 tools/bench_results.json
 # The PDF is fully transcribed in PROBLEM_STATEMENT.md; avoid duplicate/unreadable paper
 *.pdf
+# Build/submission artifacts and generated data (not corpus)
+dist/
+output/
+code/business_entity_resolution/models/
+DATA/keys/
+DATA/candidates/
+DATA/processed/
+DATA/pairs/
+DATA/features/
+DATA/reports/
+DATA/tmp/

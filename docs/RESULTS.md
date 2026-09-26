@@ -60,3 +60,15 @@ ber.cli evaluate        # 4:1 marks
 ber.cli validation --workers 8   # believable full-candidate mark
 ber.cli loo             # unseen-country proxy
 ```
+
+## Leaderboard upload
+
+Per PROBLEM_STATEMENT.md §13, the leaderboard submission is **only** `output/matching_results.tsv`:
+
+- Tab-separated, header exactly `source1_entity_id<TAB>matched_entity_ids`.
+- One row per test Source 1 entity (1,732,544 rows), empty `matched_entity_ids` for singletons.
+- This is the file uploaded in the Portal; public and private leaderboards are computed from it
+  (public = a subset, private = the remainder; final rankings use the private split).
+- A byte-identical upload copy is staged at `dist/leaderboard_upload/matching_results.tsv`.
+- `candidate_pairs.tsv` is not scored on the leaderboard; it belongs to the final submission zip.
+
