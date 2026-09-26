@@ -2,7 +2,7 @@
 
 Solution workspace for the Amazon ML Challenge 2026 *Business Entity Resolution* problem: match noisy business records from **Source 2** and **Source 3** to the deduplicated reference **Source 1**, evaluated by macro **F_0.5** (precision-heavy).
 
-Status: **0.1.0** — problem statement, dataset analysis, GBDT benchmark, and project knowledge graph are in place. The end-to-end matching pipeline is next.
+Status: **1.3.0** — end-to-end pipeline shipped and submitted. Public leaderboard macro F0.5 = **0.811**; local held-out full-candidate estimate 0.8488. Next step: raise the blocking recall ceiling.
 
 ## Documentation
 
@@ -10,7 +10,7 @@ Status: **0.1.0** — problem statement, dataset analysis, GBDT benchmark, and p
 |---|---|
 | [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md) | Full challenge spec: format, outputs, metric, constraints, fair play. |
 | [`RULES.md`](RULES.md) | Binding project rules: fair play, data handling, engineering, validation, versioning. |
-| [`docs/RESULTS.md`](docs/RESULTS.md) | Believable metrics (full-candidate 0.8488), LOO proxy, test output stats. |
+| [`docs/RESULTS.md`](docs/RESULTS.md) | Metrics: official leaderboard **0.811**, full-candidate 0.8488, LOO proxy, output stats. |
 | [`docs/PROJECT_LOG.md`](docs/PROJECT_LOG.md) | Chronological run log with commands, timings, and measured numbers. |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture decisions and reasoning (why blocking+GBDT, threshold 0.925, ...). |
 | [`docs/FAILURES_AND_FIXES.md`](docs/FAILURES_AND_FIXES.md) | Every failure, root cause, and fix, for future reference. |
@@ -81,12 +81,27 @@ python utils/validate_submission.py `
 
 Verdict: quality is tied; LightGBM trains 3–4.5× faster. Full results in `tools/bench_results.json`.
 
+## Results
+
+| Evaluation | macro F0.5 |
+|---|---|
+| **Official leaderboard (public Portal, 26 Sep 2026)** | **0.811** |
+| Full-candidate held-out (local, test-like) | 0.8488 |
+| 4:1 sampled (local, optimistic) | 0.9807 |
+| Unseen-country proxy (train US -> India / India -> US) | 0.668 / 0.804 |
+
+The official 0.811 fell inside the predicted 0.80–0.85 band, ~0.04 below the held-out estimate
+(unseen France + public/private split). Candidate recall ceiling 0.814 is the main limiter.
+
 ## Roadmap
 
-1. Normalize + country-aware address parsing, cached to parquet.
-2. Blocking passes (name/phonetic/rare-token/street/PIN) → `candidate_pairs.tsv`.
-3. Pairwise features → LightGBM matcher, threshold tuned for macro F_0.5.
-4. Predict test matches → `matching_results.tsv`, validate, package the submission zip.
+1. ~~Normalize + country-aware address parsing, cached to parquet.~~
+2. ~~Blocking passes (name/rare-token/prefix/pair/triple) → `candidate_pairs.tsv`.~~
+3. ~~Pairwise features → LightGBM matcher, threshold tuned for macro F_0.5.~~
+4. ~~Predict test matches → `matching_results.tsv`, validate, package the submission zip.~~
+5. **Next:** raise blocking recall above 0.814 (embedding/LSH fuzzy name blocking), tighten the
+   France/unseen-country handling, and re-tune; then re-submit.
+
 
 ## Fair play
 

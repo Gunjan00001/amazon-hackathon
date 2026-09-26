@@ -38,6 +38,7 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - `output/candidate_pairs.tsv` — 1,732,544 rows (554 empty).
 - 5,071,867 candidate pairs above threshold 0.925.
 - Package staged at `dist/AA.._submission/`; zip `dist/AA..__submission.zip`.
+- **Portal submission 26 Sep 2026, 02:43 PM IST → public leaderboard macro F0.5 = 0.811 (Evaluated).**
 
 ## Corrections made during the run
 

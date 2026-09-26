@@ -100,6 +100,7 @@ empty second column. The official validator reports `PASS`.
   candidates for the held-out S1 groups, the optimum moved from 0.675 (4:1 sample) to **0.925**;
   all submission outputs use 0.925.
 - Reported scores:
+  - **Official leaderboard (public Portal, 26 Sep 2026): macro F0.5 = 0.811** (Evaluated) — the real score.
   - 4:1 sampled split (grouped), one-to-one: macro F0.5 **0.9807** — *optimistic, not comparable to
     the leaderboard* (see `DATA/reports/eval_marks.json`).
   - Full candidates, held-out S1 groups (test-like): macro F0.5 **0.8488**, 95% CI 0.848–0.850,

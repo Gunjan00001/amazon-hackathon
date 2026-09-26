@@ -12,6 +12,7 @@ tools/bench_results.json
 # Build/submission artifacts and generated data (not corpus)
 dist/
 output/
+submission/*.tsv
 code/business_entity_resolution/models/
 DATA/keys/
 DATA/candidates/

@@ -240,28 +240,28 @@
     "semantic_hash": "53c0a7a2779ead109ee61dead723fd11"
   },
   "D:\\Amazon project\\Documentation_template.md": {
-    "mtime": 1790412528.4425247,
-    "seen": 1790413029.6963909,
-    "ast_hash": "5bd590cdcf70ffd2e6775645cc5f8db1",
-    "semantic_hash": "5bd590cdcf70ffd2e6775645cc5f8db1"
+    "mtime": 1790414437.7202046,
+    "seen": 1790414632.2723434,
+    "ast_hash": "bde683bacd7fd0f367ee047427f7cec8",
+    "semantic_hash": "bde683bacd7fd0f367ee047427f7cec8"
   },
   "D:\\Amazon project\\README.md": {
-    "mtime": 1790412528.4425247,
-    "seen": 1790413029.6963925,
-    "ast_hash": "7b921b606569063ed3bcf64bd9fb04a4",
-    "semantic_hash": "7b921b606569063ed3bcf64bd9fb04a4"
+    "mtime": 1790414382.7049482,
+    "seen": 1790414632.2723455,
+    "ast_hash": "bfd094d6c793c91bce2bc6b98bb130e9",
+    "semantic_hash": "bfd094d6c793c91bce2bc6b98bb130e9"
   },
   "D:\\Amazon project\\RULES.md": {
-    "mtime": 1790412569.1254866,
-    "seen": 1790413029.696393,
-    "ast_hash": "a9bc722e4bb54e47266c85bb218b2616",
-    "semantic_hash": "a9bc722e4bb54e47266c85bb218b2616"
+    "mtime": 1790414445.3691125,
+    "seen": 1790414632.2723467,
+    "ast_hash": "51357664b63d073955d2c13e08110914",
+    "semantic_hash": "51357664b63d073955d2c13e08110914"
   },
   "D:\\Amazon project\\code\\business_entity_resolution\\README.md": {
-    "mtime": 1790412528.4435241,
-    "seen": 1790413029.6963942,
-    "ast_hash": "bd146c8c8e10fe7d747cfeb049ee6c63",
-    "semantic_hash": "bd146c8c8e10fe7d747cfeb049ee6c63"
+    "mtime": 1790414415.941553,
+    "seen": 1790414632.2723475,
+    "ast_hash": "5b1d434af827ca9428ef2c978b841165",
+    "semantic_hash": "5b1d434af827ca9428ef2c978b841165"
   },
   "D:\\Amazon project\\code\\business_entity_resolution\\requirements.txt": {
     "mtime": 1790412528.462209,
@@ -282,16 +282,16 @@
     "semantic_hash": "184809950b8b5bd5aeecc2c83bf6d4c9"
   },
   "D:\\Amazon project\\docs\\PROJECT_LOG.md": {
-    "mtime": 1790412528.4665327,
-    "seen": 1790413029.6963966,
-    "ast_hash": "612151e0eb591778c1f99873f1c0cec0",
-    "semantic_hash": "612151e0eb591778c1f99873f1c0cec0"
+    "mtime": 1790414321.5902889,
+    "seen": 1790414632.2723508,
+    "ast_hash": "e599db020a1befa3ab38edd20132fb81",
+    "semantic_hash": "e599db020a1befa3ab38edd20132fb81"
   },
   "D:\\Amazon project\\docs\\RESULTS.md": {
-    "mtime": 1790412528.4665327,
-    "seen": 1790413029.6963973,
-    "ast_hash": "e8df45b0ab0ca0c211478e3489d9dcb7",
-    "semantic_hash": "e8df45b0ab0ca0c211478e3489d9dcb7"
+    "mtime": 1790414312.384302,
+    "seen": 1790414632.2723515,
+    "ast_hash": "9f101b7e96342b731995827b84594f85",
+    "semantic_hash": "9f101b7e96342b731995827b84594f85"
   },
   "D:\\Amazon project\\docs\\superpowers\\plans\\2026-09-25-entity-resolution-pipeline.md": {
     "mtime": 1790412528.2924373,
@@ -316,5 +316,11 @@
     "seen": 1790413029.6963997,
     "ast_hash": "2c4e81a4ff53772ee1335b7424b4bd94",
     "semantic_hash": "2c4e81a4ff53772ee1335b7424b4bd94"
+  },
+  "D:\\Amazon project\\submission\\README.md": {
+    "mtime": 1790413689.5663786,
+    "seen": 1790414632.2723556,
+    "ast_hash": "1ac2b00c6e40267d58b0650985293789",
+    "semantic_hash": "1ac2b00c6e40267d58b0650985293789"
   }
 }

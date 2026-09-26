@@ -3,20 +3,31 @@
 Authoritative metric: macro F_0.5 (beta = 0.5), per Source 1 entity, singletons included.
 The only true score is produced by the challenge portal from `output/matching_results.tsv`.
 
+## Official leaderboard result
+
+- **Public leaderboard macro F0.5 = 0.811** (submitted 26 Sep 2026, 02:43 PM IST; status: Evaluated).
+- This is the real Portal score on the public test split, computed from `output/matching_results.tsv`
+  (one-to-one, threshold 0.925).
+- It lands inside the predicted **0.80–0.85** band and slightly below the held-out full-candidate
+  estimate (0.8488). The gap is consistent with the ~15% unseen-France slice and public/private
+  split differences.
+
 ## Headline
 
 | Evaluation | macro F0.5 | Notes |
 |---|---|---|
+| **Official leaderboard (public, Portal)** | **0.811** | real score, 26 Sep 2026 |
 | 4:1 sampled split (train, grouped) | 0.9807 | **optimistic, not leaderboard-comparable** |
-| **Full candidates, held-out S1 (test-like)** | **0.8488** | 95% CI 0.8481–0.8496 |
+| **Full candidates, held-out S1 (test-like)** | **0.8488** | 95% CI 0.8481–0.8496; over-estimates by ~0.04 |
 | Unseen-country proxy (train US -> India) | 0.6684 | France proxy (lower bound) |
 | Unseen-country proxy (train India -> US) | 0.8041 | France proxy |
 | Full model, US val entities | 0.8905 | in-domain |
 | Full model, India val entities | 0.7885 | in-domain |
 
-Realistic leaderboard expectation: **~0.80–0.85**. France is ~15% of the test set, has no labels,
-and an unseen country costs 0.09–0.12 F0.5 (LOO). Candidate recall ceiling on the held-out set is
-**0.8142**, which bounds the maximum achievable score.
+Realistic leaderboard expectation (now confirmed): **~0.80–0.85**. France is ~15% of the test set,
+has no labels, and an unseen country costs 0.09–0.12 F0.5 (LOO). Candidate recall ceiling on the
+held-out set is **0.8142**, which bounds the maximum achievable score.
+
 
 ## Full-candidate held-out details (`DATA/reports/eval_full_candidates.json`)
 
@@ -71,4 +82,5 @@ Per PROBLEM_STATEMENT.md §13, the leaderboard submission is **only** `output/ma
   (public = a subset, private = the remainder; final rankings use the private split).
 - A byte-identical upload copy is staged at `dist/leaderboard_upload/matching_results.tsv`.
 - `candidate_pairs.tsv` is not scored on the leaderboard; it belongs to the final submission zip.
+- **Submitted 26 Sep 2026, 02:43 PM IST — result: macro F0.5 = 0.811 (Evaluated).**
 

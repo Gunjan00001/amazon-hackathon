@@ -81,6 +81,9 @@ Final inference uses threshold 0.925.
 
 ## 5. Results & Error Analysis
 
+- **Official leaderboard (public Portal, 26 Sep 2026): macro F_0.5 = 0.811** (Evaluated). This is the
+  real score on the public test split, computed from `output/matching_results.tsv` (one-to-one,
+  threshold 0.925). It falls inside the predicted ~0.80–0.85 band.
 - **Full-candidate held-out estimate (test-like):** macro F_0.5 **0.8488**, 95% CI
   [0.8481, 0.8496], computed on the 20% held-out Source 1 groups using their complete candidate
   sets (438,499 entities; 60.9M candidate pairs). Candidate recall ceiling 0.814.
