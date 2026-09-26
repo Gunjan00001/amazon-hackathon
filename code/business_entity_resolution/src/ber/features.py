@@ -1,3 +1,6 @@
+import hashlib
+import json
+import pickle
 import shutil
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
@@ -24,7 +27,99 @@ FEATURE_ORDER = [
     "street_jaccard", "postal_exact", "postal_prefix3", "state_match", "landmark",
     "addr_missing", "addr_len_diff", "same_country", "is_s2", "pass_id", "block_score",
     "s1_degree", "cand_degree",
+    "name_char3_cos", "name_roman_char3_cos", "addr_char3_cos",
 ]
+
+
+CHAR3_NGRAM = (3, 3)
+CHAR3_MIN_DF = 3
+CHAR3_SAMPLE = 100_000
+
+
+def fit_char_vectorizer(texts, ngram=CHAR3_NGRAM, min_df=CHAR3_MIN_DF):
+    from sklearn.feature_extraction.text import TfidfVectorizer
+
+    vec = TfidfVectorizer(
+        analyzer="char",
+        ngram_range=ngram,
+        min_df=min_df,
+        sublinear_tf=True,
+        norm="l2",
+        dtype=np.float32,
+    )
+    vec.fit([str(t) for t in texts])
+    return vec
+
+
+def save_char_vectorizer(vec, path):
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("wb") as handle:
+        pickle.dump(vec, handle)
+    return path
+
+
+_CHAR_VEC_CACHE = {}
+
+
+def load_char_vectorizer(path):
+    key = str(path)
+    if key not in _CHAR_VEC_CACHE:
+        with Path(path).open("rb") as handle:
+            _CHAR_VEC_CACHE[key] = pickle.load(handle)
+    return _CHAR_VEC_CACHE[key]
+
+
+def char3_cosine(vec, a_texts, b_texts):
+    a = vec.transform([str(t) for t in a_texts])
+    b = vec.transform([str(t) for t in b_texts])
+    return np.asarray(a.multiply(b).sum(axis=1)).ravel().astype(np.float32)
+
+
+def _train_text_sample(cfg, sample_size=CHAR3_SAMPLE):
+    data = Path(cfg.data_dir)
+    rng = np.random.default_rng(cfg.seed)
+    per = max(1, sample_size // 3)
+    texts = []
+    for source in (1, 2, 3):
+        path = data / "processed" / f"train_source{source}.parquet"
+        if not path.exists():
+            continue
+        frame = pd.read_parquet(path, columns=["name_norm", "name_roman", "addr_norm"])
+        if len(frame) > per:
+            index = rng.choice(len(frame), size=per, replace=False)
+            frame = frame.iloc[index]
+        for column in ("name_norm", "name_roman", "addr_norm"):
+            texts.extend(frame[column].astype(str).tolist())
+    return texts
+
+
+def ensure_char_vectorizer(cfg, sample_size=CHAR3_SAMPLE):
+    data = Path(cfg.data_dir)
+    vec_path = data / "processed" / "char3_vectorizer.pkl"
+    if vec_path.exists():
+        return vec_path
+    texts = _train_text_sample(cfg, sample_size)
+    min_df = CHAR3_MIN_DF if len(texts) >= 100 else 1
+    vec = fit_char_vectorizer(texts, ngram=CHAR3_NGRAM, min_df=min_df)
+    save_char_vectorizer(vec, vec_path)
+    vocab = sorted(vec.vocabulary_)
+    sha1 = hashlib.sha1("\n".join(vocab).encode("utf-8")).hexdigest()
+    (data / "processed" / "char3_vocab.json").write_text(
+        json.dumps(
+            {
+                "n_vocab": len(vocab),
+                "ngram": list(CHAR3_NGRAM),
+                "min_df": min_df,
+                "sample_docs": len(texts),
+                "seed": cfg.seed,
+                "sha1": sha1,
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    return vec_path
 
 
 def load_frame(path, columns=S1_COLS):
@@ -74,7 +169,7 @@ def _pair_set_metrics(tokens1, tokens2):
     return np.asarray(jaccard, dtype=np.float32), np.asarray(containment, dtype=np.float32)
 
 
-def _feature_block(merged):
+def _feature_block(merged, char_vec=None):
     s1_name = merged["name_fold"].astype(str).tolist()
     c_name = merged["name_fold_2"].astype(str).tolist()
     s1_norm = merged["name_norm"].astype(str).tolist()
@@ -153,10 +248,22 @@ def _feature_block(merged):
     out["block_score"] = merged["block_score"].astype(np.float32)
     out["s1_degree"] = merged["s1_degree"].astype(np.float32)
     out["cand_degree"] = merged["cand_degree"].astype(np.float32)
+    if char_vec is None:
+        out["name_char3_cos"] = np.float32(0.0)
+        out["name_roman_char3_cos"] = np.float32(0.0)
+        out["addr_char3_cos"] = np.float32(0.0)
+    else:
+        out["name_char3_cos"] = char3_cosine(char_vec, s1_norm, c_norm)
+        out["name_roman_char3_cos"] = char3_cosine(char_vec, s1_roman, c_roman)
+        out["addr_char3_cos"] = char3_cosine(char_vec, s1_addr, c_addr)
     return out
 
 
-def compute_features(pairs, s1, cand, cfg, chunk_size=3_000_000):
+def compute_features(pairs, s1, cand, cfg, chunk_size=3_000_000, char_vec=None):
+    if char_vec is None and getattr(cfg, "data_dir", None) is not None:
+        vec_path = Path(cfg.data_dir) / "processed" / "char3_vectorizer.pkl"
+        if vec_path.exists():
+            char_vec = load_char_vectorizer(vec_path)
     s1 = attach_country(s1, cfg, "train") if "country" not in s1.columns else s1
     cand = attach_country(cand, cfg, "train", id_col="entity_id") if "country" not in cand.columns else cand
     keep1 = ["entity_id", "name_norm", "name_fold", "name_roman", "name_tokens", "name_script",
@@ -184,7 +291,7 @@ def compute_features(pairs, s1, cand, cfg, chunk_size=3_000_000):
         b = cand[cand["entity_id"].isin(chunk["cand_id"])]
         merged = chunk.merge(a, left_on="s1_id", right_on="entity_id", how="left", suffixes=("", "_1"))
         merged = merged.merge(b, left_on="cand_id", right_on="entity_id", how="left", suffixes=("", "_2"))
-        feats = _feature_block(merged)
+        feats = _feature_block(merged, char_vec)
         feats["s1_id"] = chunk["s1_id"].to_numpy()
         feats["cand_id"] = chunk["cand_id"].to_numpy()
         if "label" in chunk.columns:
@@ -283,12 +390,13 @@ def _phase1_merged(cfg, split, n_parts=16, meta_split=None):
 
 
 def _process_part(args):
-    part_path, out_path = args
+    part_path, out_path, vec_path = args
+    char_vec = load_char_vectorizer(vec_path) if vec_path else None
     writer = None
     rows = 0
     for batch in pq.ParquetFile(part_path).iter_batches(batch_size=500_000):
         merged = batch.to_pandas()
-        feats = _feature_block(merged)
+        feats = _feature_block(merged, char_vec)
         feats["s1_id"] = merged["s1_id"].to_numpy()
         feats["cand_id"] = merged["cand_id"].to_numpy()
         if "label" in merged.columns:
@@ -322,12 +430,15 @@ def run_features(cfg, split="train", workers=1, combine=False, n_parts=16, keep_
     merged_parts = _phase1_merged(cfg, split, n_parts=n_parts, meta_split=meta_split)
     print(f"[features] phase1 merged parts: {len(merged_parts)}", flush=True)
 
+    vec_path = ensure_char_vectorizer(cfg)
+    print(f"[features] char vectorizer: {vec_path}", flush=True)
+
     feat_dir = data / "tmp" / f"{split}_features"
     if feat_dir.exists():
         shutil.rmtree(feat_dir)
     feat_dir.mkdir(parents=True, exist_ok=True)
     tasks = [
-        (str(part), str(feat_dir / f"part_{i:04d}.parquet"))
+        (str(part), str(feat_dir / f"part_{i:04d}.parquet"), str(vec_path))
         for i, part in enumerate(merged_parts)
     ]
 

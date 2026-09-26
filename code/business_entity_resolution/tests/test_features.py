@@ -46,6 +46,32 @@ def test_compute_features_golden():
     assert good["house_match"] == 1.0
 
 
+def test_char3_cosine_ranks_similar_names():
+    from ber.features import char3_cosine, fit_char_vectorizer
+
+    vec = fit_char_vectorizer(
+        ["best bakery inc", "best bakery", "pizza palace", "oak road", "main street"],
+        ngram=(3, 3),
+        min_df=1,
+    )
+    similar, dissimilar = char3_cosine(
+        vec, ["Best Bakery Inc", "Best Bakery Inc"], ["Best Bakery", "Pizza Palace"]
+    )
+    assert similar > dissimilar
+
+
+def test_char_vectorizer_persist_roundtrip(tmp_path):
+    from ber.features import char3_cosine, fit_char_vectorizer, load_char_vectorizer, save_char_vectorizer
+
+    vec = fit_char_vectorizer(["best bakery", "pizza palace", "main street"], ngram=(3, 3), min_df=1)
+    path = tmp_path / "char3_vectorizer.pkl"
+    save_char_vectorizer(vec, path)
+    loaded = load_char_vectorizer(path)
+    before = char3_cosine(vec, ["best bakery"], ["best bakery"])
+    after = char3_cosine(loaded, ["best bakery"], ["best bakery"])
+    assert before[0] == after[0]
+
+
 def test_attach_country_maps_all_sources(tmp_path):
     from ber.features import _COUNTRY_CACHE, attach_country
 

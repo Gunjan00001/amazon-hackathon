@@ -65,3 +65,15 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
   truth-bearing entities have zero found candidates. Headroom over the 0.8488 baseline is **+0.0634**
   (> 0.05) → matcher precision/recall is the lever; re-blocking stays conditional.
 
+## 2026-09-26 — M2 Task 2: char n-gram TF-IDF cosine features
+
+- Added `name_char3_cos`, `name_roman_char3_cos`, `addr_char3_cos` (char-3 TF-IDF cosine) and appended
+  them to `FEATURE_ORDER` (33 → 36 features).
+- Vectorizer fit once on a 299,997-doc train sample (seed 42), persisted at
+  `DATA/processed/char3_vectorizer.pkl`; `DATA/processed/char3_vocab.json` records n_vocab 21,015.
+- `ber.cli features --split train --workers 8 --combine` → `DATA/features/train.parquet`
+  30,494,378 × 39 (`{'positives': 6,198,915, 'negatives': 24,295,463}`).
+- Regenerated held-out parts: `DATA/tmp/valfull_features` 60,912,676 rows × 38, 16 parts.
+- Verified the three new columns have 0 nulls and range [0, 1].
+- Test-split features deliberately deferred to Task 10 (embeddings added in Task 7 would invalidate them).
+
