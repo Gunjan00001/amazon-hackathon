@@ -93,6 +93,20 @@ concluding embeddings are unhelpful.
 - Method: one-to-one post-process, threshold 0.925.
 - Official validator: **PASS**.
 
+## Test submission — v2.0.0 rebuild (adopted 1.4.1 model + calibration)
+
+- `ber.cli features --split test --workers 8` (250,607,135 rows, char-3) then
+  `ber.cli predict --split test --one-to-one` with calibrated thresholds applied:
+  global 0.95, India 0.925 / US 0.95, `singleton_tau` 0.30, one-to-one.
+- `matching_results.tsv`: 1,732,544 rows, **212,118 empty (singletons)**, 1,520,426 non-empty.
+- `candidate_pairs.tsv`: 1,732,544 rows, 554 empty, 1,731,990 non-empty (candidates unchanged).
+- 5,063,955 candidate pairs scored at/above the 0.925 floor (before per-country/singleton filtering).
+- Official validator: **PASS**.
+- Package refreshed: `dist/AA.._submission/` + `dist/AA..__submission.zip` (~1.38 GB);
+  leaderboard file staged at `dist/leaderboard_upload/matching_results.tsv` and
+  `submission/matching_results.tsv`. **Portal upload pending** (held-out estimate 0.8577; France is
+  ~15% and unseen, so expect a partial gain over the 0.811 baseline).
+
 ## Reproduce
 
 ```
@@ -101,8 +115,9 @@ ber.cli block --split both
 ber.cli audit --split train
 ber.cli features --split train --workers 8 --combine
 ber.cli train
+ber.cli calibrate
 ber.cli features --split test --workers 8
-ber.cli predict --split test --one-to-one --threshold 0.925
+ber.cli predict --split test --one-to-one
 ber.cli evaluate        # 4:1 marks
 ber.cli validation --workers 8   # believable full-candidate mark
 ber.cli loo             # unseen-country proxy

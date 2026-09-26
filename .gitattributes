@@ -1,0 +1,2 @@
+# LightGBM text models must keep LF line endings or the model parser fails.
+code/business_entity_resolution/models/lgbm.txt -text

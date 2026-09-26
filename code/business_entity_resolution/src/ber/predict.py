@@ -9,6 +9,9 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.parquet as pq
 
+from ber.calibration import load_calibration
+from ber.features import _country_map
+
 
 def _load_booster(cfg):
     models = Path(cfg.models_dir)
@@ -16,6 +19,10 @@ def _load_booster(cfg):
     features = json.loads((models / "feature_list.json").read_text(encoding="utf-8"))
     threshold = float(json.loads((models / "threshold.json").read_text(encoding="utf-8"))["global"])
     return booster, features, threshold
+
+
+def _load_calibration(cfg):
+    return load_calibration(Path(cfg.models_dir) / "threshold.json")
 
 
 def _feature_sources(cfg, split):
@@ -66,7 +73,7 @@ def predict_parts(cfg, split, booster, features, threshold, out_dir=None):
     return pred_dir, total
 
 
-def _write_tsv(cfg, split, use_one_to_one, n_buckets=64):
+def _write_tsv(cfg, split, use_one_to_one, global_threshold=0.5, by_country=None, singleton_tau=None, n_buckets=64):
     data = Path(cfg.data_dir)
     out_dir = Path(cfg.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -75,6 +82,7 @@ def _write_tsv(cfg, split, use_one_to_one, n_buckets=64):
     s1_parquet = (data / "processed" / f"{split}_source1.parquet").as_posix()
     matching = out_dir / "matching_results.tsv"
     candidate = out_dir / "candidate_pairs.tsv"
+    by_country = by_country or {}
 
     con = duckdb.connect()
     con.execute("SET memory_limit='8GB'")
@@ -86,21 +94,57 @@ def _write_tsv(cfg, split, use_one_to_one, n_buckets=64):
         f"CREATE TEMP TABLE s1list AS SELECT entity_id AS source1_entity_id FROM read_parquet('{s1_parquet}')"
     )
 
+    s1_frame = con.execute("SELECT source1_entity_id FROM s1list").fetchdf()
+    country_of = _country_map(cfg, split)
+    con.register(
+        "s1_country",
+        pd.DataFrame(
+            {
+                "source1_entity_id": s1_frame["source1_entity_id"],
+                "country": s1_frame["source1_entity_id"].map(country_of).fillna(""),
+            }
+        ),
+    )
+    if by_country:
+        thr_frame = pd.DataFrame(
+            {"country": list(by_country), "threshold": [float(v) for v in by_country.values()]}
+        )
+    else:
+        thr_frame = pd.DataFrame(
+            {"country": pd.Series(dtype="object"), "threshold": pd.Series(dtype="float64")}
+        )
+    con.register("country_thr", thr_frame)
+
+    con.execute(
+        f"CREATE TEMP TABLE gmax AS SELECT m.s1_id, MAX(m.prob) AS mx "
+        f"FROM read_parquet('{preds}') m GROUP BY m.s1_id"
+    )
+    tau_sql = f"AND g.mx >= {float(singleton_tau)}" if singleton_tau is not None else ""
+    con.execute(
+        f"""
+        CREATE TEMP TABLE eligible AS
+        SELECT m.s1_id, m.cand_id, m.prob
+        FROM read_parquet('{preds}') m
+        JOIN gmax g ON g.s1_id = m.s1_id
+        LEFT JOIN s1_country sc ON sc.source1_entity_id = m.s1_id
+        LEFT JOIN country_thr ct ON ct.country = sc.country
+        WHERE m.prob >= COALESCE(ct.threshold, {float(global_threshold)}) {tau_sql}
+        """
+    )
+
     if use_one_to_one:
         con.execute(
-            f"""
+            """
             CREATE TEMP TABLE matches AS
             SELECT s1_id, cand_id FROM (
                 SELECT s1_id, cand_id,
                        row_number() OVER (PARTITION BY cand_id ORDER BY prob DESC, s1_id ASC) AS rn
-                FROM read_parquet('{preds}')
+                FROM eligible
             ) WHERE rn = 1
             """
         )
     else:
-        con.execute(
-            f"CREATE TEMP TABLE matches AS SELECT DISTINCT s1_id, cand_id FROM read_parquet('{preds}')"
-        )
+        con.execute("CREATE TEMP TABLE matches AS SELECT DISTINCT s1_id, cand_id FROM eligible")
 
     con.execute(
         f"""
@@ -178,19 +222,38 @@ def _write_tsv(cfg, split, use_one_to_one, n_buckets=64):
 
 
 def run_predict(cfg, split="test", use_one_to_one=False, threshold_override=None, reuse_predictions=False):
-    booster, features, threshold = _load_booster(cfg)
+    booster, features, global_threshold = _load_booster(cfg)
+    calibration = _load_calibration(cfg)
+    by_country = dict(calibration.get("by_country") or {})
+    singleton_tau = calibration.get("singleton_tau")
     if threshold_override is not None:
-        threshold = float(threshold_override)
-    print(f"[predict] model={booster.num_trees()} trees, threshold={threshold}", flush=True)
+        global_threshold = float(threshold_override)
+        by_country = {}
+        singleton_tau = None
+    floor = min([global_threshold] + [float(v) for v in by_country.values()])
+    print(
+        f"[predict] model={booster.num_trees()} trees, global={global_threshold}, "
+        f"by_country={by_country}, singleton_tau={singleton_tau}, floor={floor}",
+        flush=True,
+    )
     data = Path(cfg.data_dir)
     pred_dir = data / "tmp" / f"{split}_pred"
     if reuse_predictions and pred_dir.exists() and any(pred_dir.glob("*.parquet")):
         print("[predict] reusing existing prediction parts", flush=True)
         n_pred = None
     else:
-        pred_dir, n_pred = predict_parts(cfg, split, booster, features, threshold)
-    stats = _write_tsv(cfg, split, use_one_to_one)
-    stats["pairs_above_threshold"] = int(n_pred) if n_pred is not None else "reused"
+        pred_dir, n_pred = predict_parts(cfg, split, booster, features, floor)
+    stats = _write_tsv(
+        cfg,
+        split,
+        use_one_to_one,
+        global_threshold=global_threshold,
+        by_country=by_country,
+        singleton_tau=singleton_tau,
+    )
+    stats["pairs_above_floor"] = int(n_pred) if n_pred is not None else "reused"
     stats["use_one_to_one"] = bool(use_one_to_one)
-    stats["threshold"] = threshold
+    stats["threshold"] = global_threshold
+    stats["by_country"] = by_country
+    stats["singleton_tau"] = singleton_tau
     return stats

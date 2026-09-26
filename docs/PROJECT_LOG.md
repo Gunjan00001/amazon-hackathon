@@ -131,4 +131,20 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - The export/import/merge tooling and the notebook are kept for future runs (e.g. full 384-dim on a
   host with more RAM/local disk).
 
+## 2026-09-26 — M2 Task 10: rebuild outputs with the adopted 1.4.1 model (v2.0.0)
+
+- `predict.py` now loads `models/threshold.json` calibration and applies per-country thresholds +
+  `singleton_tau` + one-to-one for the test split (predict floor = min(global, country thresholds)).
+  New tests `tests/test_predict.py` (per-country drop, singleton tau); full suite 45 passed.
+- `ber.cli features --split test --workers 8` → `DATA/tmp/test_features` 250,607,135 rows, 16 parts.
+- `ber.cli predict --split test --one-to-one` → `output/matching_results.tsv` (1,732,544 rows;
+  212,118 singletons) + `output/candidate_pairs.tsv` (554 empty); 5,063,955 pairs ≥ 0.925 floor.
+- Validator (from repo root): **PASS** — `DATA/reports/validate_char3.log`.
+- Package refreshed: synced `src/ber/*.py` into `dist/AA.._submission/`, updated outputs, rebuilt
+  `dist/AA..__submission.zip` (1,379.6 MB) with Python `zipfile` (PowerShell 2 GB limit, F18),
+  staged `dist/leaderboard_upload/matching_results.tsv` and `submission/matching_results.tsv`.
+- Fixed an LF/CRLF model-load failure while reverting `models/` (F14; added `.gitattributes`).
+- Portal upload intentionally **not** performed by the agent.
+
+
 

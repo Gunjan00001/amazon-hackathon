@@ -83,3 +83,43 @@ Kept for future reference so the same dead ends are not re-entered.
 - **Fix:** added name-token prefix-5, street-token prefix-5, and rare-token pair/triple passes and
   widened caps; final train recall **0.8115**. India (0.727) remains the weak spot; raising recall
   further (embedding/LSH fuzzy blocking) is the top future work item.
+
+## F14 — LightGBM model failed to load after `git checkout` (CRLF)
+- **Symptom:** `[LightGBM] [Fatal] Model format error, expect a tree here. met 65786 43005 ...` on
+  `ber.cli predict`, after reverting `models/` with `git checkout`.
+- **Cause:** git `core.autocrlf` rewrote `models/lgbm.txt` with CRLF on checkout; LightGBM's text
+  parser does not strip the trailing `\r`, so the header/tree keywords are mis-parsed.
+- **Fix:** normalized the file to LF in place and added `.gitattributes` with
+  `code/business_entity_resolution/models/lgbm.txt -text` so git never converts it again.
+
+## F15 — Free-Colab random disk I/O made embedding cosine infeasible
+- **Symptom:** the pair-cosine job read ~28 GB and spent >6 min per 250k-pair batch (process in `D`
+  state, ~60 MB/s) over the 18 GB fp16 embedding `memmap` — ~37× read amplification.
+- **Cause:** random row gather across a file far larger than RAM/page-cache on Colab's overlay disk.
+- **Fix:** one sequential pass applying a seeded random projection 384 → 64 dims (cosine-preserving)
+  into RAM, then gather from the compact arrays (~500k pairs/s). Correctness note: the reduced-dim
+  cosine was not good enough to pass the gate (see D16) — plan a full-dim re-run on a host with
+  enough RAM/local disk rather than judging embeddings from the 64-dim result.
+
+## F16 — DuckDB quirks during the Colab pair-cosine (reserved word, temp OOM)
+- **Symptom A:** `COPY (...) ORDER BY r1, r2` to parquet produced a 0-byte file; a later
+  `ParquetFile` raised `Parquet file size is 0 bytes`.
+- **Cause A:** the index column was named `row`, a reserved SQL word, so the join/select silently
+  misbehaved.
+- **Fix A:** renamed to `row_idx`.
+- **Symptom B:** `OutOfMemoryException: failed to offload data block ... max_temp_directory_size`
+  when externally sorting 60.9M rows.
+- **Fix B:** abandoned the DuckDB external sort for this job in favour of the in-RAM approach (F15).
+
+## F17 — Colab `files.upload()` truncated files at ~100 MB
+- **Symptom:** uploaded `entities.parquet` etc. arrived ~99/89/78 MB and were unreadable
+  (`Parquet magic bytes not found in footer`).
+- **Cause:** the `google.colab.files.upload()` widget caps per-file size (~100 MB).
+- **Fix:** transfer large inputs via Google Drive / the Colab Files panel; keep `files.download`
+  for outputs and verify row counts after transfer.
+
+## F18 — `Compress-Archive` could not zip the submission (2 GB stream limit)
+- **Symptom:** `Exception calling "Write" ... "Stream was too long."` building the submission zip
+  (3.1 GB `candidate_pairs.tsv`).
+- **Cause:** Windows PowerShell 5.1 `Compress-Archive` uses a .NET stream limited to 2 GB per entry.
+- **Fix:** build the zip with Python `zipfile` (ZIP64, `ZIP_DEFLATED`) — 3.1 GB → ~1.38 GB.
