@@ -18,7 +18,8 @@ The only true score is produced by the challenge portal from `output/matching_re
 |---|---|---|
 | **Official leaderboard (public, Portal)** | **0.811** | real score, 26 Sep 2026 |
 | 4:1 sampled split (train, grouped) | 0.9807 | **optimistic, not leaderboard-comparable** |
-| **Full candidates, held-out S1 (test-like)** | **0.8488** | 95% CI 0.8481–0.8496; over-estimates by ~0.04 |
+| **Full candidates, held-out S1 (test-like)** | **0.8488** | baseline v1.0.0; sweep 0.925 + one-to-one |
+| **M2: char-3 TF-IDF + per-country/singleton calibration** | **0.8577** | **v1.4.0 adopted** (US 0.8983 / India 0.7968) |
 | Unseen-country proxy (train US -> India) | 0.6684 | France proxy (lower bound) |
 | Unseen-country proxy (train India -> US) | 0.8041 | France proxy |
 | Full model, US val entities | 0.8905 | in-domain |
@@ -33,8 +34,26 @@ held-out set is **0.8142**, which bounds the maximum achievable score.
 
 - 438,499 held-out Source 1 entities; 60,912,676 candidate pairs; 1,524,017 truth pairs of which
   1,240,887 found (ceiling 0.8142).
-- Threshold-only: 0.8475 @ 0.925. One-to-one: **0.8488 @ 0.925** (chosen).
+- Threshold-only: 0.8475 @ 0.925. One-to-one: **0.8488 @ 0.925** (chosen; v1.0.0 baseline,
+  95% CI 0.8481–0.8496).
 - Per country: US 0.889, India 0.788. Singletons in val: 23,182.
+
+## M2 (v1.4.0) — char-3 features + per-country/singleton calibration
+
+Two changes, gated on the same full-candidate held-out protocol (candidate set unchanged):
+
+1. **Char-3 TF-IDF cosine features** (`name_char3_cos`, `name_roman_char3_cos`, `addr_char3_cos`;
+   vectorizer fit on a 299,997-doc train sample, vocab 21,015). Retrained LightGBM (523 trees,
+   4:1 val macro F0.5 0.9824). Uncalibrated full-candidate held-out:
+   **0.8574** (US 0.8978 / India 0.7968).
+2. **Per-country thresholds + singleton tau**, calibrated on held-out full-candidate predictions
+   (25% tuning sample) and scored on all held-out S1 (`DATA/reports/eval_calibrated.json`):
+   global 0.95, by country India 0.925 / US 0.95, `singleton_tau` 0.30, one-to-one.
+   **chosen_macro_f05 = 0.8577** (95% CI 0.8570–0.8585; US 0.8983 / India 0.7968).
+
+Gate: 0.8577 > 0.8488 and India 0.7968 > 0.788 → **adopted** (tag `1.4.0`). Open country France
+falls back to the 0.95 global threshold. Remaining M2 headroom is in the matcher (oracle 0.9122) and,
+beyond that, the 0.8142 blocking ceiling.
 
 ## 4:1 sampled details (`DATA/reports/eval_marks.json`)
 
@@ -97,12 +116,14 @@ held-out S1 groups with the singleton rule.
 - Decision: headroom > 0.05 → **matcher work (Tasks 2–3) is the lever**; blocking (Task 9) stays
   conditional.
 
-## Next milestone (M2) — target
+## Next milestone (M2) — status
 
-Plan: `docs/superpowers/plans/2026-09-26-precision-colab.md`. Headroom analysis: the blocking ceiling
-(0.814 pairs) is worth ~0.95 in macro F0.5, so ~0.10 of the current score is matcher precision/recall;
-India (0.788) has the most headroom. Workstream: local diagnostic + char n-gram features + per-country
-thresholds/singleton calibration, then Colab T4 multilingual embedding cosine (+ optional
-cross-encoder rerank), conditionally MinHash-LSH re-blocking. Target held-out > 0.90, leaderboard > 0.85.
+Plan: `docs/superpowers/plans/2026-09-26-precision-colab.md`. Local phases 0–1 are done and adopted
+at **v1.4.0**: diagnostic (oracle 0.9122, matcher is the lever), char-3 TF-IDF features, and
+per-country/singleton calibration → held-out **0.8577**. Remaining: Colab T4 multilingual embedding
+cosine features (Tasks 5–7, gate > 0.8577), optional cross-encoder rerank (Task 8), conditional
+MinHash-LSH re-blocking (Task 9, only if the 0.8142 ceiling binds), then rebuild/validate/submit
+(Task 10). Target: held-out > 0.90, leaderboard > 0.85.
+
 
 

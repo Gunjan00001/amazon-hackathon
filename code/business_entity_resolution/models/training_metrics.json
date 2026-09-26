@@ -1,8 +1,8 @@
 {
-  "val_macro_f05": 0.9803326693829346,
+  "val_macro_f05": 0.9823652930624197,
   "threshold": 0.7000000000000003,
-  "best_iteration": 610,
-  "train_pairs": 24396564,
-  "val_pairs": 6097814,
+  "best_iteration": 523,
+  "train_pairs": 24397208,
+  "val_pairs": 6097170,
   "val_entities": 438499
 }

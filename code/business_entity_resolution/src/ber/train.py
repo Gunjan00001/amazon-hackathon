@@ -62,7 +62,11 @@ def train_model(cfg, split="train"):
     booster.save_model(str(models / "lgbm.txt"))
     (models / "feature_list.json").write_text(json.dumps(FEATURE_ORDER, indent=2), encoding="utf-8")
     (models / "threshold.json").write_text(
-        json.dumps({"global": threshold, "use_one_to_one": False}, indent=2), encoding="utf-8"
+        json.dumps(
+            {"global": threshold, "by_country": {}, "singleton_tau": None, "use_one_to_one": True},
+            indent=2,
+        ),
+        encoding="utf-8",
     )
     metrics = {
         "val_macro_f05": score,

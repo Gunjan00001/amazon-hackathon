@@ -89,3 +89,15 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
   the Task 4 gate.
 - Tests: `tests/test_calibration.py` (6 tests); full suite 41 passed.
 
+## 2026-09-26 — M2 Task 4: retrain + held-out gate (adopted, v1.4.0)
+
+- `ber.cli train` → `models/lgbm.txt` best_iteration 523; 4:1 val macro F0.5 0.9824 @ 0.7 (+589 s).
+  `threshold.json` now written with the `by_country`/`singleton_tau` schema (provisional, empty).
+- `ber.cli validation --workers 8` → `DATA/reports/eval_full_candidates.json`: one-to-one
+  **0.85742** @ 0.925 (US 0.8978 / India 0.7968), ceiling 0.8142 (char-3 alone beat baseline 0.8488).
+- `ber.cli calibrate` (tuned on 25% of held-out full-candidate preds, scored on all held-out S1) →
+  `models/threshold.json` global 0.95, by country India 0.925 / US 0.95, `singleton_tau` 0.30;
+  `DATA/reports/eval_calibrated.json` chosen_macro_f05 **0.85772** (US 0.8983 / India 0.7968,
+  CI 0.8570–0.8585).
+- Gate: 0.85772 > 0.8488 and India 0.7968 > 0.788 → **adopted**; `git tag -a 1.4.0`.
+
