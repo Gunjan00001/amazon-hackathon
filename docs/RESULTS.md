@@ -19,7 +19,7 @@ The only true score is produced by the challenge portal from `output/matching_re
 | **Official leaderboard (public, Portal)** | **0.811** | real score, 26 Sep 2026 |
 | 4:1 sampled split (train, grouped) | 0.9807 | **optimistic, not leaderboard-comparable** |
 | **Full candidates, held-out S1 (test-like)** | **0.8488** | baseline v1.0.0; sweep 0.925 + one-to-one |
-| **M2: char-3 TF-IDF + per-country/singleton calibration** | **0.8577** | **v1.4.0 adopted** (US 0.8983 / India 0.7968) |
+| **M2: char-3 TF-IDF + per-country/singleton calibration** | **0.8577** | **v1.4.1 adopted** (US 0.8983 / India 0.7968) |
 | Unseen-country proxy (train US -> India) | 0.6684 | France proxy (lower bound) |
 | Unseen-country proxy (train India -> US) | 0.8041 | France proxy |
 | Full model, US val entities | 0.8905 | in-domain |
@@ -38,7 +38,7 @@ held-out set is **0.8142**, which bounds the maximum achievable score.
   95% CI 0.8481–0.8496).
 - Per country: US 0.889, India 0.788. Singletons in val: 23,182.
 
-## M2 (v1.4.0) — char-3 features + per-country/singleton calibration
+## M2 (v1.4.1) — char-3 features + per-country/singleton calibration
 
 Two changes, gated on the same full-candidate held-out protocol (candidate set unchanged):
 
@@ -51,7 +51,7 @@ Two changes, gated on the same full-candidate held-out protocol (candidate set u
    global 0.95, by country India 0.925 / US 0.95, `singleton_tau` 0.30, one-to-one.
    **chosen_macro_f05 = 0.8577** (95% CI 0.8570–0.8585; US 0.8983 / India 0.7968).
 
-Gate: 0.8577 > 0.8488 and India 0.7968 > 0.788 → **adopted** (tag `1.4.0`). Open country France
+Gate: 0.8577 > 0.8488 and India 0.7968 > 0.788 → **adopted** (tag `1.4.1`; `1.4.0` already marked the M2 plan). Open country France
 falls back to the 0.95 global threshold. Remaining M2 headroom is in the matcher (oracle 0.9122) and,
 beyond that, the 0.8142 blocking ceiling.
 
@@ -119,7 +119,7 @@ held-out S1 groups with the singleton rule.
 ## Next milestone (M2) — status
 
 Plan: `docs/superpowers/plans/2026-09-26-precision-colab.md`. Local phases 0–1 are done and adopted
-at **v1.4.0**: diagnostic (oracle 0.9122, matcher is the lever), char-3 TF-IDF features, and
+at **v1.4.1**: diagnostic (oracle 0.9122, matcher is the lever), char-3 TF-IDF features, and
 per-country/singleton calibration → held-out **0.8577**. Remaining: Colab T4 multilingual embedding
 cosine features (Tasks 5–7, gate > 0.8577), optional cross-encoder rerank (Task 8), conditional
 MinHash-LSH re-blocking (Task 9, only if the 0.8142 ceiling binds), then rebuild/validate/submit

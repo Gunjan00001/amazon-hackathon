@@ -95,7 +95,7 @@ Each entry: decision, context, alternatives, and consequence.
 - **Context:** the shipped matcher used rapidfuzz/token features only; char n-grams capture typos and morphological variants that token features miss.
 - **Decision:** add char 3-gram TF-IDF cosine for `name_norm`, `name_roman`, `addr_norm` (vectorizer fit on the train sample, reused for val/test).
 - **Consequence:** more precision/recall information locally at low cost; candidate set unchanged.
-- **Measured (v1.4.0):** held-out full-candidate macro F0.5 0.8488 → **0.8574** uncalibrated
+- **Measured (v1.4.1):** held-out full-candidate macro F0.5 0.8488 → **0.8574** uncalibrated
   (US 0.8978 / India 0.7968), the largest single gain in M2 so far.
 
 ## D15 — Per-country thresholds + singleton calibration
@@ -103,7 +103,7 @@ Each entry: decision, context, alternatives, and consequence.
 - **Decision:** tune thresholds per country (US/India) with a global fallback for unseen France, and add a singleton decision (`max prob < tau` → empty).
 - **Consequence:** targets the India cell (0.788) and false merges on singletons; guarded by LOO to
   avoid overfitting the unlabeled France slice.
-- **Measured (v1.4.0):** tuned on held-out full-candidate predictions (D8 — not the 4:1 sample, which
+- **Measured (v1.4.1):** tuned on held-out full-candidate predictions (D8 — not the 4:1 sample, which
   gives miscalibrated 0.7): global 0.95, India 0.925, US 0.95, `singleton_tau` 0.30. Lifts the
   char-3 uncalibrated held-out 0.8574 → **0.8577** (US 0.8983 / India 0.7968). France falls back to
   the 0.95 global threshold.
