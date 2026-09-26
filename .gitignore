@@ -26,6 +26,8 @@ DATA/reports/
 DATA/tmp/
 DATA/pairs/
 DATA/features/
+DATA/colab_in/
+DATA/colab_out/
 
 # Submission build output
 dist/

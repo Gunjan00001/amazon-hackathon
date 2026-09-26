@@ -102,3 +102,14 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - Gate: 0.85772 > 0.8488 and India 0.7968 > 0.788 → **adopted**; `git tag -a 1.4.1`
   (`1.4.0` was already used for the M2 plan commit).
 
+## 2026-09-26 — M2 Task 5: Colab export/import (local)
+
+- Added `ber/colab_io.py`: `export_for_colab` → `DATA/colab_in/entities.parquet` (unique entity texts
+  from all processed sources) and `pairs_{split}.parquet`; `import_cosine` reads
+  `DATA/colab_out/cosine_{split}.parquet` and returns `(s1_id, cand_id, emb_name_cos, emb_addr_cos)`.
+- Added `ber.cli colab-export` / `colab-import`.
+- Export: entities 24,229,173 rows / 1,066.7 MB; pairs train 212.3 MB, valfull 354.8 MB,
+  test 1,452.1 MB (250.6M rows).
+- `tests/test_colab_io.py` round-trip (export → cosine → import → key merge); full suite 42 passed.
+- `.gitignore` now excludes `DATA/colab_in/` and `DATA/colab_out/` (never commit data).
+

@@ -18,7 +18,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog="ber")
     parser.add_argument(
         "command",
-        choices=["prepare", "block", "audit", "features", "train", "tune", "calibrate", "predict", "outputs", "evaluate", "validation", "loo", "diagnose", "all"],
+        choices=["prepare", "block", "audit", "features", "train", "tune", "calibrate", "predict", "outputs", "evaluate", "validation", "loo", "diagnose", "colab-export", "colab-import", "all"],
     )
     parser.add_argument("--config", default=_default_config())
     parser.add_argument("--split", default="both", choices=["train", "test", "both"])
@@ -98,6 +98,20 @@ def main(argv=None):
         from ber.diagnostic import run_diagnostic
 
         print(json.dumps(run_diagnostic(cfg), indent=2))
+    if args.command in ("colab-export",):
+        from ber.colab_io import export_for_colab
+
+        print(json.dumps(export_for_colab(cfg), indent=2))
+    if args.command in ("colab-import",):
+        from ber.colab_io import COSINE_COLUMNS, SPLITS, import_cosine
+
+        for split in SPLITS:
+            path = Path(cfg.data_dir) / "colab_out" / f"cosine_{split}.parquet"
+            if not path.exists():
+                print(f"[colab-import] {split}: no {path.name}, skipped")
+                continue
+            frame = import_cosine(cfg, split, COSINE_COLUMNS)
+            print(f"[colab-import] {split}: {len(frame):,} rows, columns {list(frame.columns)}")
     return 0
 
 
