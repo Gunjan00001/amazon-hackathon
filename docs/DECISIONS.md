@@ -79,3 +79,25 @@ Each entry: decision, context, alternatives, and consequence.
 - **Decision:** ship only that; no `models/` in the package (a reproducer retrains from data).
   A minimal `src/config.json` is included so the packaged pipeline runs as-is.
 - **Consequence:** package is spec-compliant and self-contained; model is reproducible but not shipped.
+
+## D12 — Local CPU for stages 0–1 and 5, Colab/Kaggle GPU for transformer stages
+- **Context:** the matcher/precision work is CPU- and data-bound; embeddings and cross-encoders are GPU-bound.
+- **Decision:** keep cleaning, blocking, tabular features, LightGBM, calibration, validation, outputs and packaging local; run embeddings/rerank on Colab (free T4) or Kaggle.
+- **Reasoning:** Colab free has 2 vCPU / 13.6 GB RAM vs local 8C/16T / 23 GB and the data is local, so phases 0–1 are faster locally; the T4 is ~20–50× faster than local CPU for transformers.
+- **Consequence:** avoids large data transfers for CPU work; `RULES.md` §6 amended to allow both.
+
+## D13 — Colab returns per-pair cosine features, not full embeddings
+- **Context:** full embeddings for ~20M unique entities are ~15 GB fp16; free Drive is 15 GB.
+- **Decision:** Colab computes embeddings and returns only `(s1_id, cand_id, emb_name_cos, emb_addr_cos)` (~0.5 GB for test).
+- **Consequence:** tiny transfers and no extra storage account needed; full vectors are not reused, so embedding changes require a ~2–4 h re-encode.
+
+## D14 — Add char n-gram TF-IDF cosine features
+- **Context:** the shipped matcher used rapidfuzz/token features only; char n-grams capture typos and morphological variants that token features miss.
+- **Decision:** add char 3-gram TF-IDF cosine for `name_norm`, `name_roman`, `addr_norm` (vectorizer fit on the train sample, reused for val/test).
+- **Consequence:** more precision/recall information locally at low cost; candidate set unchanged.
+
+## D15 — Per-country thresholds + singleton calibration
+- **Context:** F0.5 is precision-heavy and per-entity; US and India have different score distributions, and true singletons are worth 1.0 only if predicted empty.
+- **Decision:** tune thresholds per country (US/India) with a global fallback for unseen France, and add a singleton decision (`max prob < tau` → empty).
+- **Consequence:** targets the India cell (0.788) and false merges on singletons; guarded by LOO to avoid overfitting the unlabeled France slice.
+

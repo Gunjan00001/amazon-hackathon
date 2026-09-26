@@ -46,3 +46,15 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
   full candidate distribution to **0.925**; all submitted outputs use 0.925.
 - The 4:1 number (0.98) is optimistic and must not be quoted as the leaderboard score; see
   `RESULTS.md`.
+
+## 2026-09-26 — Colab GPU probe and M2 plan
+
+- Connected to Colab via the MCP tool (`colab_open_colab_browser_connection` → true) and ran a probe
+  in a scratch cell: **Tesla T4, 15,360 MiB VRAM, compute capability 7.5, CUDA available,
+  `torch 2.11.0+cu128` preinstalled, 2 vCPU, 13.6 GB RAM (free tier)**. fp16 supported; no bf16.
+- Wrote the next-milestone design and plan:
+  `docs/superpowers/specs/2026-09-26-precision-colab-design.md` and
+  `docs/superpowers/plans/2026-09-26-precision-colab.md`.
+- Split decision: phases 0–1 and 5 local (CPU/data-bound, faster locally); phases 2–3 on Colab T4
+  (embeddings + optional cross-encoder); phase 4 (MinHash-LSH re-block) conditional.
+

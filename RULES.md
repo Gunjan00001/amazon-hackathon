@@ -72,11 +72,11 @@ The validator is a gate: exit 0 (`PASS`) required before any submission.
 2. Never commit secrets, tokens, or credentials.
 3. Never hand-edit `graphify-out/` outputs; regenerate them with the graphify pipeline.
 4. Keep `main` in a state where the documented commands work.
-5. Current version: **1.3.0** (official leaderboard result recorded: public macro F0.5 **0.811**; docs and graphify updated). Earlier: 1.2.0 = leaderboard submission file committed; 1.1.0 = leaderboard upload guidance + refreshed graphify; 1.0.0 = submission-ready package (validator PASS, held-out full-candidate macro F0.5 0.8488); 0.2.0 = Kaggle-only compute rules and cascade C+B design; 0.1.0 = initial docs, EDA and benchmark tooling, knowledge graph.
+5. Current version: **1.4.0** (M2 plan: local diagnostic + char n-gram features + per-country/singleton calibration, Colab T4 embeddings/rerank; §6 amended to allow Colab). Earlier: 1.3.0 = official leaderboard result (public macro F0.5 **0.811**) recorded + docs/graphify; 1.2.0 = leaderboard submission file committed; 1.1.0 = leaderboard upload guidance + refreshed graphify; 1.0.0 = submission-ready package (validator PASS, held-out 0.8488); 0.2.0 = Kaggle-only compute rules and cascade C+B design; 0.1.0 = initial docs, EDA and benchmark tooling, knowledge graph.
 
-## 6. Compute rules — Kaggle-only
+## 6. Compute rules — local CPU + Kaggle/Colab GPU
 
-1. All training and GPU inference runs on Kaggle: Kaggle Notebooks + Kaggle Datasets only. The local machine is for editing, CPU-only prep/validation, and preparing notebook runs.
+1. CPU-bound stages (cleaning, DuckDB blocking, tabular features, LightGBM training, calibration, validation, output) run **locally** on the Python 3.12 venv. GPU/transformer stages (embeddings, cross-encoder rerank) run on **Kaggle Notebooks or Google Colab**; either is acceptable. The local machine is for editing, CPU prep/validation, and preparing notebook runs.
 2. Kaggle accelerators only; baseline target is T4 x2 (fp16), L4 x4 as optional speedup. Free tier gives ~30 GPU-h/week (9-12 h session cap, ~20 GB notebook outputs): every GPU stage must cache its artifacts as a versioned Kaggle Dataset output so a re-run never repeats GPU work.
 3. The 7 challenge TSVs are mirrored to a **private** Kaggle Dataset `amz-er-2026-raw` (never public, never in git). Canonical local data stays at `D:\Amazon project\DATA\`; code reads `DATA_DIR` from env/config, no hard-coded paths.
 4. Runtime model downloads on internet-enabled notebooks are allowed, but every model must be MIT/Apache-2.0 and <=8B params; pin exact model IDs + revisions in requirements/metadata.
@@ -84,3 +84,4 @@ The validator is a gate: exit 0 (`PASS`) required before any submission.
 6. `kaggle.json`, notebook secrets, and tokens are never committed.
 7. Validate outputs locally with `utils/validate_submission.py` before any upload; record notebook + dataset versions in the version log (see §5).
 8. Data cleaning and feature engineering are first-class pipeline code: normalization, transliteration, address parsing, and every pair feature are versioned, cached Kaggle Dataset artifacts, and the SAME cleaning + feature code runs for train, validation and test. No label-derived features; validation splits stay grouped by Source 1 entity with a held-out country (France proxy).
+9. Colab specifics (verified 2026-09-26: free-tier **Tesla T4, 15.6 GB, fp16 only**, 2 vCPU / 13.6 GB RAM): use fp16 (no bf16), shard long jobs at ~500k rows and checkpoint each shard, and return only the small **per-pair cosine** parquet (~0.5 GB) rather than full embeddings (~15 GB). Total 0/1 phases stay local (2 vCPU Colab is slower and would require re-uploading the data). Pin model IDs and revisions; MIT/Apache-2.0 only.

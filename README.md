@@ -11,6 +11,7 @@ Status: **1.3.0** — end-to-end pipeline shipped and submitted. Public leaderbo
 | [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md) | Full challenge spec: format, outputs, metric, constraints, fair play. |
 | [`RULES.md`](RULES.md) | Binding project rules: fair play, data handling, engineering, validation, versioning. |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | Metrics: official leaderboard **0.811**, full-candidate 0.8488, LOO proxy, output stats. |
+| [`docs/superpowers/plans/2026-09-26-precision-colab.md`](docs/superpowers/plans/2026-09-26-precision-colab.md) | Next milestone (M2): precision lift + Colab embeddings — executable plan. |
 | [`docs/PROJECT_LOG.md`](docs/PROJECT_LOG.md) | Chronological run log with commands, timings, and measured numbers. |
 | [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture decisions and reasoning (why blocking+GBDT, threshold 0.925, ...). |
 | [`docs/FAILURES_AND_FIXES.md`](docs/FAILURES_AND_FIXES.md) | Every failure, root cause, and fix, for future reference. |

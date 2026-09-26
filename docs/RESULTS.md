@@ -84,3 +84,12 @@ Per PROBLEM_STATEMENT.md §13, the leaderboard submission is **only** `output/ma
 - `candidate_pairs.tsv` is not scored on the leaderboard; it belongs to the final submission zip.
 - **Submitted 26 Sep 2026, 02:43 PM IST — result: macro F0.5 = 0.811 (Evaluated).**
 
+## Next milestone (M2) — target
+
+Plan: `docs/superpowers/plans/2026-09-26-precision-colab.md`. Headroom analysis: the blocking ceiling
+(0.814 pairs) is worth ~0.95 in macro F0.5, so ~0.10 of the current score is matcher precision/recall;
+India (0.788) has the most headroom. Workstream: local diagnostic + char n-gram features + per-country
+thresholds/singleton calibration, then Colab T4 multilingual embedding cosine (+ optional
+cross-encoder rerank), conditionally MinHash-LSH re-blocking. Target held-out > 0.90, leaderboard > 0.85.
+
+
