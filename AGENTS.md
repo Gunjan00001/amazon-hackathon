@@ -16,8 +16,8 @@ Keep documentation and logs current as you work:
   GPU stages only; CPU stages and all outputs stay local. See
   `docs/superpowers/plans/2026-09-26-precision-colab.md` and `RULES.md` §6.
 - Harnesses: `opencode` and `mcode` are both agent harnesses used on this repo; keep instructions harness-agnostic.
-- Tests: `.venv\Scripts\python.exe -m pytest -q` from the repo root (19+ tests). `conftest.py` puts `src/` on `sys.path`.
-- CLI: set `PYTHONPATH=code/business_entity_resolution/src` then run `python -m ber.cli <command> --config code/business_entity_resolution/config.json`. Commands: `prepare`, `block`, `audit`, `features`, `train`, `tune`, `predict`, `outputs`, `all`.
+- Tests: `.venv\Scripts\python.exe -m pytest -q` from the repo root (45 tests). `conftest.py` puts `src/` on `sys.path`.
+- CLI: set `PYTHONPATH=code/business_entity_resolution/src` then run `python -m ber.cli <command> --config code/business_entity_resolution/config.json`. Commands: `prepare`, `block`, `audit`, `features`, `train`, `calibrate`, `predict`, `evaluate`, `validation`, `loo`, `diagnose`, `colab-export`, `colab-import`, `colab-merge`, `all`.
 
 ## Pipeline data contracts (all on disk, parquet/JSON)
 
@@ -40,10 +40,42 @@ Keep documentation and logs current as you work:
 - Report path: `DATA/reports/{split}_blocking_audit.json`. Keys: `recall`, `recall_by_country`, `reduction_ratio`, `candidates_per_s1_mean`, `singleton_candidates_mean`, `per_pass_recall`, `truth_pairs`, `found_pairs`.
 - `test_run_audit_matches_pandas_reference` asserts the DuckDB path equals the pandas reference field-by-field.
 
+## Matcher + calibration contract
+
+- `ber/features.py::FEATURE_ORDER` (36 features) is the single source of truth for model inputs; it
+  ends with `name_char3_cos`, `name_roman_char3_cos`, `addr_char3_cos` (char-3 TF-IDF cosine).
+  `models/feature_list.json` mirrors it and `predict` reads that file.
+- Char vectorizer: fit once on a 299,997-doc train sample (seed 42), persisted at
+  `DATA/processed/char3_vectorizer.pkl` (`char3_vocab.json` records n_vocab/sha1).
+  `ensure_char_vectorizer` refits only if the pickle is missing; `min_df` drops to 1 for tiny corpora.
+- `ber/calibration.py`: `tune_per_country` (per-country sweep, global fallback for sparse/single-class
+  countries) + `singleton_decision` (`max(prob) < tau` → empty). `models/threshold.json` schema:
+  `{"global", "by_country", "singleton_tau", "use_one_to_one"}`; `load_calibration` stays backward
+  compatible with the old `{"global","use_one_to_one"}` file.
+- Current operating point (v2.0.0): held-out full-candidate macro F0.5 **0.8577** (US 0.8983 / India
+  0.7968); thresholds global 0.95, India 0.925 / US 0.95, `singleton_tau` 0.30, one-to-one.
+- Calibrate on **full-candidate held-out predictions** (`DATA/tmp/valfull_pred`), never the 4:1 sample
+  (D8). `ber.cli calibrate` requires `ber.cli validation` to have produced those predictions first.
+- `predict` applies the calibration by default: floor = `min(global, country thresholds)`, then
+  per-country threshold + singleton tau + one-to-one in `_write_tsv`.
+- Oracle headroom diagnostic: `ber.cli diagnose` → `DATA/reports/eval_oracle.json` (0.9122).
+
+## Colab GPU stages
+
+- Optional GPU work (`notebooks/colab_embeddings.ipynb`) via the Colab MCP. Inputs are exported by
+  `ber.cli colab-export` to `DATA/colab_in/`; per-pair cosines return to `DATA/colab_out/` and are
+  merged with `ber.cli colab-merge`. Free-Colab `files.upload()` caps at ~100 MB (use Drive/Files
+  panel); random disk I/O over the full embedding files is unusable (F15). Embeddings were tested and
+  **not adopted** (D16); the test split was regenerated without them.
+
 ## Gotchas already learned
 
 - `DATA` and `data` collide on Windows; intermediates land in the existing `DATA/` directory even though `config.json` says `data`.
 - Parquet list columns come back from `iter_batches` as numpy arrays, not Python lists.
 - Per-token Metaphone blocking explodes (75 GiB temp); it was removed. Do not reintroduce it.
 - Commas are data: always `sep="\t"`, `keep_default_na=False`.
-- Generated datasets/keys/candidates are git-ignored; never commit them.
+- Generated datasets/keys/candidates are git-ignored; never commit them. `DATA/colab_in/` and
+  `DATA/colab_out/` are git-ignored too.
+- The LightGBM text model (`models/lgbm.txt`) must stay **LF-only**; CRLF breaks its parser (F14).
+  `.gitattributes` marks it `-text` so git never converts it.
+- Free-Colab `files.upload()` truncates at ~100 MB; move large inputs via Drive or the Files panel (F17).

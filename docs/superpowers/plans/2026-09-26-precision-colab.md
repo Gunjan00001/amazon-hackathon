@@ -9,6 +9,13 @@
 0.811 by improving matcher precision (features + calibration + GPU rerank), conditionally raising the
 blocking recall ceiling.
 
+> **Outcome (2026-09-26):** Tasks 1–5 done. Task 4 adopted at **tag `1.4.1`** (char-3 TF-IDF features
+> + per-country/singleton calibration; held-out **0.8488 → 0.8577**). Task 6 ran on the Colab T4 but
+> free-tier disk I/O forced a 384→64-dim projection; the Task 7 gate **failed** (0.8570 < 0.8577), so
+> embeddings were **not adopted** (D16) and `models/` reverted. Task 8/9 not started. Task 10 completed
+> at **tag `2.0.0`**: calibrated test outputs regenerated, validator PASS, package staged. Remaining
+> options: full-dim embeddings on Kaggle, cross-encoder rerank, or LSH re-blocking.
+
 **Architecture:** char n-gram TF-IDF cosine features computed locally; multilingual embedding
 cosine features computed on Colab T4 and returned as a small per-pair parquet; per-country thresholds
 plus a singleton decision; optional cross-encoder rerank; optional MinHash-LSH re-block.
