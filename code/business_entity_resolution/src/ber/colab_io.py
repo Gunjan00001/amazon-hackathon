@@ -4,10 +4,10 @@ from pathlib import Path
 import duckdb
 import pandas as pd
 
-ENTITY_COLUMNS = ["entity_id", "name_norm", "name_roman", "addr_norm"]
+ENTITY_COLUMNS = ["entity_id", "name_raw", "addr_raw", "name_norm", "name_roman", "addr_norm"]
 SPLITS = ("train", "valfull", "test")
-COSINE_COLUMNS = ("emb_name_cos", "emb_addr_cos")
-EMB_FEATURES = ("emb_name_cos", "emb_addr_cos")
+COSINE_COLUMNS = ("name_e5_cos", "addr_e5_cos", "entity_e5_cos")
+EMB_FEATURES = COSINE_COLUMNS
 EMB_MISSING = -1.0
 
 
@@ -23,27 +23,50 @@ def export_entities(cfg):
     data = Path(cfg.data_dir)
     out = data / "colab_in" / "entities.parquet"
     out.parent.mkdir(parents=True, exist_ok=True)
-    files = [
+    splits = ("train", "test")
+    norm_files = [
         (data / "processed" / f"{split}_source{source}.parquet").as_posix()
-        for split in ("train", "test")
+        for split in splits
         for source in (1, 2, 3)
         if (data / "processed" / f"{split}_source{source}.parquet").exists()
     ]
-    if not files:
+    if not norm_files:
         raise FileNotFoundError("no processed source parquet files to export")
-    file_sql = "[" + ",".join(f"'{f}'" for f in files) + "]"
+    raw_files = [
+        (Path(cfg.dataset_dir) / split / f"{split}_source{source}.tsv").as_posix()
+        for split in splits
+        for source in (1, 2, 3)
+        if (Path(cfg.dataset_dir) / split / f"{split}_source{source}.tsv").exists()
+    ]
+    norm_sql = "[" + ",".join(f"'{f}'" for f in norm_files) + "]"
     con = duckdb.connect()
     _configure(con, data)
+    if raw_files:
+        raw_sql = "[" + ",".join(f"'{f}'" for f in raw_files) + "]"
+        con.execute(
+            "CREATE TEMP TABLE raw AS "
+            "SELECT entity_id, any_value(business_name) AS name_raw, "
+            "any_value(business_address) AS addr_raw "
+            f"FROM read_csv({raw_sql}, delim='\\t', header=true, union_by_name=true, all_varchar=true) "
+            "WHERE entity_id IS NOT NULL GROUP BY entity_id"
+        )
+    else:
+        con.execute("CREATE TEMP TABLE raw (entity_id VARCHAR, name_raw VARCHAR, addr_raw VARCHAR)")
+    con.execute(
+        "CREATE TEMP TABLE norm AS "
+        "SELECT entity_id, any_value(name_norm) AS name_norm, "
+        "any_value(name_roman) AS name_roman, any_value(addr_norm) AS addr_norm "
+        f"FROM read_parquet({norm_sql}) "
+        "WHERE entity_id IS NOT NULL GROUP BY entity_id"
+    )
     con.execute(
         f"""
         COPY (
-            SELECT entity_id, name_norm, name_roman, addr_norm FROM (
-                SELECT entity_id, name_norm, name_roman, addr_norm,
-                       row_number() OVER (PARTITION BY entity_id
-                           ORDER BY name_norm, name_roman, addr_norm) AS rn
-                FROM read_parquet({file_sql})
-                WHERE entity_id IS NOT NULL
-            ) WHERE rn = 1
+            SELECT n.entity_id,
+                   COALESCE(r.name_raw, n.name_norm) AS name_raw,
+                   COALESCE(r.addr_raw, n.addr_norm) AS addr_raw,
+                   n.name_norm, n.name_roman, n.addr_norm
+            FROM norm n LEFT JOIN raw r ON r.entity_id = n.entity_id
         ) TO '{out.as_posix()}' (FORMAT PARQUET, COMPRESSION ZSTD)
         """
     )

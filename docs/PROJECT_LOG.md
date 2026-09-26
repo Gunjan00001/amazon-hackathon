@@ -146,5 +146,51 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - Fixed an LF/CRLF model-load failure while reverting `models/` (F14; added `.gitattributes`).
 - Portal upload intentionally **not** performed by the agent.
 
+## 2026-09-27 — E0 baseline freeze (execution plan started)
+
+- Plan of record: `C:\Users\Gunjan\.opencode\plan\2026-09-27-ber-execution-plan.md` (E0–E11).
+- Confirmed decisions: GPU = Colab T4 first / Kaggle T4x2 fallback; raw text via export-time TSV join;
+  single shared e5 prefix; clean `DATA/tmp` before E4.
+- `.venv\Scripts\python.exe -m pytest -q` → **45 passed**.
+- Snapshot `code/business_entity_resolution/models/` → `models_baseline_2.0.0/`; `lgbm.txt` SHA256
+  `808643FB08FE26BF30982ABB6F33E9993AAFFF4C8D1375D7231217F2E4B70DC8` identical to source.
+- Environment: git tags 0.1.0 … **2.0.0**, working tree clean, D: ~96.3 GB free, Python 3.12.14.
+- Colab MCP browser connection established (result `true`); live session is fresh/empty.
+- **Stale-artifact note:** `DATA/reports/eval_calibrated.json` (0.8570, `singleton_tau` 0.93) is the
+  rejected-embedding artifact (D16) and does **not** match the adopted `models/threshold.json`
+  (global 0.95, India 0.925/US 0.95, `singleton_tau` 0.30, held-out 0.8577). Also `DATA/features/train.parquet`
+  and `DATA/tmp/valfull_features` still carry the rejected `emb_name_cos`/`emb_addr_cos` columns, and
+  `DATA/tmp/valfull_pred` was produced by the embedding model. Regenerating `valfull_pred` with the adopted
+  1.4.1 booster to restore a trustworthy E2 baseline (does not modify `models/`).
+
+## 2026-09-27 — E2 diagnostics (baseline "before" point)
+
+- `ber.cli audit --split train` reproduced exactly: recall **0.81155** (US 0.8681 / India 0.7269),
+  reduction 29.53, candidates/S1 138.10, 304,759,423 candidates, 6,198,915 / 7,638,365 truth pairs.
+- `ber.cli diagnose` reproduced: oracle macro F0.5 **0.91216** (US 0.9468 / India 0.8602), held-out
+  pair recall 0.81422, entity recall 0.81393, zero-candidate S1 17,785 / 415,317 (4.28%).
+- `ber.cli validation --workers 8` regenerated `valfull_pred` with the adopted 1.4.1 booster (does not
+  touch `models/`): uncalibrated one-to-one **0.85742** @ 0.925 (US 0.8978 / India 0.7968). Read-only
+  `score_calibration` with the adopted `threshold.json` → **0.85772** (US 0.8983 / India 0.7968, tau 0.30).
+  Gate PASSED. Written to `DATA/reports/exp_E2.json`.
+
+## 2026-09-27 — E1 local prep (raw-text export + streaming Colab notebook)
+
+- `ber/colab_io.py::export_entities` now joins raw `business_name`/`business_address` from the source
+  TSVs on `entity_id` (decision D-2), keeping normalized columns; `ENTITY_COLUMNS` →
+  `[entity_id, name_raw, addr_raw, name_norm, name_roman, addr_norm]`. `COSINE_COLUMNS`/`EMB_FEATURES`
+  renamed to `name_e5_cos`, `addr_e5_cos`, `entity_e5_cos`.
+- `tests/test_colab_io.py` updated for the new schema/columns (raw join + e5 cosine names); tests pass.
+- `ber.cli colab-export` (splits train+valfull): `DATA/colab_in/entities.parquet` 24,229,173 rows,
+  **1,949 MB** (raw text incl. non-Latin script), 32 s; `pairs_train.parquet` 30,494,378 rows,
+  `pairs_valfull.parquet` 60,912,676 rows.
+- Colab live probe: 113 GB disk / 66 GB free, **12 GB RAM**, T4 15 GB, 2 vCPU. Full 3-field fp16 =
+  55.8 GB (barely fits disk) and cannot be gathered in 12 GB RAM — the D16 failure mode. Rewrote
+  `notebooks/colab_embeddings.ipynb` to a field-at-a-time streaming design: encode one field to a
+  18.6 GB memmap, hold all Source-1 embeddings in RAM (~3 GB), stream candidates sequentially
+  (`ORDER BY e2.row`), then delete; peak disk ~20 GB. Shared `"passage: "` prefix (D-3).
+- Blocked on: placing `entities.parquet` + `pairs_{train,valfull}.parquet` (~2.4 GB) into the Colab
+  session (agent cannot upload >100 MB; needs Files panel / Drive by a human).
+
 
 
