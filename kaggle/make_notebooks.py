@@ -111,8 +111,10 @@ def run(module, *args):
 
 PRINT = '''
 import json
+import os
 from pathlib import Path
 
+ART = os.environ["BER_ARTIFACT_DIR"]
 for sub in ("clean", "block", "embed", "gbdt", "rerank", "out"):
     for name in ("metrics.json", "stats.json"):
         p = Path(ART) / sub / name

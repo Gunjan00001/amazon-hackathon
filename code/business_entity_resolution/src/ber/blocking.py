@@ -1,5 +1,6 @@
 from array import array
 from collections import defaultdict
+import heapq
 
 import numpy as np
 import pandas as pd
@@ -95,35 +96,33 @@ def generate_candidates(s1_df, mid_df, max_candidates_per_s1=200, max_postings=2
     rows_p = array("b")
     for i, k in enumerate(_iter_keys(s1_df)):
         c = k["country"]
-        seen = set()
-        budget = max_candidates_per_s1
+        score = {}
+        pcode = {}
+        if k["postal"]:
+            for j in postal_index.get((c, k["postal"]), ()):
+                score[j] = score.get(j, 0.0) + 10.0
+                pcode.setdefault(j, 0)
+        for t in k["tokens"]:
+            for j in token_index.get((c, t), ()):
+                score[j] = score.get(j, 0.0) + 3.0
+                pcode.setdefault(j, 1)
+        if k["phonetic"]:
+            for j in phonetic_index.get((c, k["phonetic"]), ()):
+                score[j] = score.get(j, 0.0) + 2.0
+                pcode.setdefault(j, 2)
         addr_sorted = sorted({t for t in k["addr_tokens"] if addr_df[(c, t)]}, key=lambda t: addr_df[(c, t)])
-        passes = (
-            (0, [postal_index.get((c, k["postal"]))] if k["postal"] else []),
-            (1, [token_index.get((c, t)) for t in k["tokens"]]),
-            (2, [phonetic_index.get((c, k["phonetic"]))] if k["phonetic"] else []),
-            (3, [addr_index.get((c, t)) for t in addr_sorted[:1]]),
-        )
-        for pass_code, posting_lists in passes:
-            done = False
-            for postings in posting_lists:
-                if not postings:
-                    continue
-                for j in postings:
-                    if j in seen:
-                        continue
-                    seen.add(j)
-                    rows_i.append(i)
-                    rows_j.append(j)
-                    rows_p.append(pass_code)
-                    budget -= 1
-                    if budget <= 0:
-                        done = True
-                        break
-                if done:
-                    break
-            if done:
-                break
+        for t in addr_sorted[:1]:
+            for j in addr_index.get((c, t), ()):
+                score[j] = score.get(j, 0.0) + 4.0
+                pcode.setdefault(j, 3)
+        if len(score) > max_candidates_per_s1:
+            top = heapq.nlargest(max_candidates_per_s1, score.items(), key=lambda kv: (kv[1], -kv[0]))
+        else:
+            top = score.items()
+        for mid, _s in top:
+            rows_i.append(i)
+            rows_j.append(mid)
+            rows_p.append(pcode[mid])
 
     pairs = pd.DataFrame({
         "s1_idx": np.array(rows_i, dtype="int32"),
