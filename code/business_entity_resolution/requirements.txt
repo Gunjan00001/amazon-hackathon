@@ -5,7 +5,7 @@ scikit-learn==1.9.1
 lightgbm==4.7.0
 xgboost==3.4.1
 rapidfuzz==3.14.6
-duckdb
-indic-transliteration
-jellyfish
-pytest
+duckdb==1.5.5
+indic-transliteration==2.3.82
+jellyfish==1.2.1
+pytest==9.1.1

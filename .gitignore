@@ -24,3 +24,8 @@ DATA/candidates/
 DATA/processed/
 DATA/reports/
 DATA/tmp/
+DATA/pairs/
+DATA/features/
+
+# Submission build output
+dist/

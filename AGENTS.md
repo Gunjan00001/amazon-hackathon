@@ -2,6 +2,12 @@
 
 Amazon ML Challenge 2026: Business Entity Resolution. Read `RULES.md` (binding rules), `PROBLEM_STATEMENT.md` (full spec), and `DATA/student_resource/dataset/DATASET.md` (measured data facts) before changing code.
 
+Keep documentation and logs current as you work:
+- `docs/PROJECT_LOG.md` — chronological run log (commands, timings, numbers).
+- `docs/DECISIONS.md` — architecture decisions and reasoning.
+- `docs/FAILURES_AND_FIXES.md` — failures and resolutions; add an entry for every non-trivial bug.
+- `docs/RESULTS.md` — metrics; update when a new believable evaluation is produced.
+
 ## Environment
 
 - ML code runs on **Python 3.12** via the project venv: `.venv\Scripts\python.exe` (created with `uv`, deps in `code/business_entity_resolution/requirements.txt`).

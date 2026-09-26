@@ -1,0 +1,21 @@
+{
+  "dataset_dir": "DATA/student_resource/dataset",
+  "data_dir": "DATA",
+  "models_dir": "code/business_entity_resolution/models",
+  "output_dir": "output",
+  "seed": 42,
+  "cap": 200,
+  "idf_min": 4.0,
+  "max_block": 5000,
+  "neg_ratio": 4,
+  "pass_caps": {"1": 5000, "3": 300, "4": 3000, "5": 1000, "6": 50, "7": 600, "8": 300, "9": 200, "10": 60},
+  "lgbm_params": {
+    "n_estimators": 2000,
+    "learning_rate": 0.05,
+    "num_leaves": 63,
+    "min_child_samples": 50,
+    "subsample": 0.8,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.8
+  }
+}

@@ -10,6 +10,10 @@ Status: **0.1.0** — problem statement, dataset analysis, GBDT benchmark, and p
 |---|---|
 | [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md) | Full challenge spec: format, outputs, metric, constraints, fair play. |
 | [`RULES.md`](RULES.md) | Binding project rules: fair play, data handling, engineering, validation, versioning. |
+| [`docs/RESULTS.md`](docs/RESULTS.md) | Believable metrics (full-candidate 0.8488), LOO proxy, test output stats. |
+| [`docs/PROJECT_LOG.md`](docs/PROJECT_LOG.md) | Chronological run log with commands, timings, and measured numbers. |
+| [`docs/DECISIONS.md`](docs/DECISIONS.md) | Architecture decisions and reasoning (why blocking+GBDT, threshold 0.925, ...). |
+| [`docs/FAILURES_AND_FIXES.md`](docs/FAILURES_AND_FIXES.md) | Every failure, root cause, and fix, for future reference. |
 | [`DATA/student_resource/dataset/DATASET.md`](DATA/student_resource/dataset/DATASET.md) | Measured dataset facts: schemas, row counts, ground-truth analysis, noise and encoding notes. |
 | [`DATA/student_resource/README.md`](DATA/student_resource/README.md) | Official challenge README. |
 | `graphify-out/GRAPH_REPORT.md` | Knowledge graph report over the project docs and tools. |
