@@ -77,3 +77,15 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - Verified the three new columns have 0 nulls and range [0, 1].
 - Test-split features deliberately deferred to Task 10 (embeddings added in Task 7 would invalidate them).
 
+## 2026-09-26 — M2 Task 3: per-country thresholds + singleton calibration
+
+- Added `ber/calibration.py`: `tune_per_country` (per-country sweep with global fallback for sparse or
+  single-class countries), `singleton_decision` (suppress a Source 1 group when `max(prob) < tau`),
+  `tune_singleton_tau`, `apply_calibration`, `save_calibration`/`load_calibration`.
+- `models/threshold.json` schema gains `by_country`, `singleton_tau`; `load_calibration` stays
+  backward compatible with the old `{"global", "use_one_to_one"}` file.
+- Added `ber.cli calibrate` (`run_calibration`) which tunes on the held-out 20% and reports to
+  `DATA/reports/calibration.json`. Not run yet — baseline `models/threshold.json` is preserved until
+  the Task 4 gate.
+- Tests: `tests/test_calibration.py` (6 tests); full suite 41 passed.
+

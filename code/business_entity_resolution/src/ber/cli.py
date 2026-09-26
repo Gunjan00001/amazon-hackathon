@@ -18,7 +18,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(prog="ber")
     parser.add_argument(
         "command",
-        choices=["prepare", "block", "audit", "features", "train", "tune", "predict", "outputs", "evaluate", "validation", "loo", "diagnose", "all"],
+        choices=["prepare", "block", "audit", "features", "train", "tune", "calibrate", "predict", "outputs", "evaluate", "validation", "loo", "diagnose", "all"],
     )
     parser.add_argument("--config", default=_default_config())
     parser.add_argument("--split", default="both", choices=["train", "test", "both"])
@@ -66,6 +66,10 @@ def main(argv=None):
         from ber.train import train_model
 
         print(train_model(cfg))
+    if args.command in ("calibrate",):
+        from ber.calibration import run_calibration
+
+        print(json.dumps(run_calibration(cfg), indent=2))
     if args.command in ("predict",):
         from ber.predict import run_predict
 
