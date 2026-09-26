@@ -12,6 +12,7 @@ Keep documentation and logs current as you work:
 
 - ML code runs on **Python 3.12** via the project venv: `.venv\Scripts\python.exe` (created with `uv`, deps in `code/business_entity_resolution/requirements.txt`).
 - Graphify runs on system Python 3.14 (`python`, not the venv). Keep the environments separate.
+- Harnesses: `opencode` and `mcode` are both agent harnesses used on this repo; keep instructions harness-agnostic.
 - Tests: `.venv\Scripts\python.exe -m pytest -q` from the repo root (19+ tests). `conftest.py` puts `src/` on `sys.path`.
 - CLI: set `PYTHONPATH=code/business_entity_resolution/src` then run `python -m ber.cli <command> --config code/business_entity_resolution/config.json`. Commands: `prepare`, `block`, `audit`, `features`, `train`, `tune`, `predict`, `outputs`, `all`.
 
