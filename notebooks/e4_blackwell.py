@@ -1,9 +1,7 @@
-"""E4 Blackwell runner — production multi-channel candidates + e5 cosines.
+"""E4 Blackwell runner — production multi-channel candidates + e5 cosines (memory-safe).
 
-Builds the E4 candidate set (lexical passes 1-10 unioned with e5 ANN passes 11-13) for BOTH
-train and test, applies a per-S1 cap, and computes e5 cosines for the final union pairs.
-Interactive-only on the RTX Pro 6000 (offline: faiss wheel + e5 model from attached datasets).
-Embeddings are held in VRAM (~56 GB for 3 fields) rather than on disk.
+Streams ANN results to parquet per (field, split) instead of concatenating ~2.6B rows in RAM.
+Embeddings stay resident in VRAM (~56 GB of 96 GB) for the cosine pass.
 
 Outputs (/kaggle/working): candidates_{train,test}.parquet, cosine_{train,test}.parquet, e4_summary.json
 """
@@ -17,6 +15,7 @@ import time
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 
@@ -24,10 +23,13 @@ def log(*a):
     print("[e4]", *a, flush=True)
 
 
-_wheel = glob.glob("/kaggle/input/**/*.whl", recursive=True)
-WHEEL_DIR = os.path.dirname(_wheel[0]) if _wheel else None
-_safet = glob.glob("/kaggle/input/**/model.safetensors", recursive=True)
+_wheels = [p for p in glob.glob("/kaggle/input/**/*.whl", recursive=True)
+           if "faiss" in os.path.basename(p).lower()]
+WHEEL_DIR = os.path.dirname(_wheels[0]) if _wheels else None
+_safet = [p for p in glob.glob("/kaggle/input/**/model.safetensors", recursive=True)
+          if "multilingual-e5-small" in p]
 MODEL_LOCAL = os.path.dirname(_safet[0]) if _safet else None
+log("wheel_dir", WHEEL_DIR, "model", MODEL_LOCAL)
 try:
     import faiss  # noqa: F401
 except Exception:
@@ -42,16 +44,18 @@ import torch  # noqa: E402
 
 OUT = "/kaggle/working"
 TMP = "/kaggle/temp/e4"
+ANN_DIR = os.path.join(TMP, "ann")
 os.makedirs(OUT, exist_ok=True)
 os.makedirs(TMP, exist_ok=True)
+os.makedirs(ANN_DIR, exist_ok=True)
 
 MODEL_ID = "intfloat/multilingual-e5-small"
 MODEL_REVISION = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
 DIM = 384
 PREFIX = "passage: "
 MAXLEN = 64
-K = int(os.environ.get("E4_K", "64"))
-CAP = int(os.environ.get("E4_CAP", "200"))
+K = int(os.environ.get("E4_K", "100"))
+CAP = int(os.environ.get("E4_CAP", "250"))
 NLIST = 4096
 PQ_M = 48
 PQ_NBITS = 8
@@ -121,6 +125,7 @@ ADDR_NORM = ENT.column("addr_norm") if "addr_norm" in COLS else ADDR_RAW
 IS_S1 = pc.starts_with(EID, pattern="S1-").to_numpy(zero_copy_only=False)
 SPLIT = np.array(ENT.column("split").to_pylist())
 row_of = {e: i for i, e in enumerate(EID_LIST)}
+eid_arr = np.array(EID_LIST, dtype=object)
 log("N", N, "N_s1", int(IS_S1.sum()))
 
 model = SentenceTransformer(MODEL_LOCAL)
@@ -146,7 +151,6 @@ def field_texts(field):
 
 
 def encode_field_gpu(field):
-    """Encode one field into a resident (N, DIM) fp16 CUDA tensor via a CPU buffer."""
     buf = np.empty((N, DIM), dtype=np.float16)
     off = 0
     t0 = time.time()
@@ -162,60 +166,56 @@ def encode_field_gpu(field):
     return torch.from_numpy(buf).cuda()
 
 
-# --- ANN per field/split, then free the index (embeddings stay resident) -----
-ANN_PATH = os.path.join(TMP, "ann.parquet")
-if not os.path.exists(ANN_PATH + ".done"):
-    ann_parts = []
-    embs = {}
-    for field in FIELDS:
-        embs[field] = encode_field_gpu(field)
-        t0 = time.time()
-        for split in ("train", "test"):
-            cand_rows = np.nonzero((SPLIT == split) & ~IS_S1)[0]
-            q_rows = np.nonzero((SPLIT == split) & IS_S1)[0]
-            index = faiss.IndexIVFPQ(faiss.IndexFlatIP(DIM), DIM, NLIST, PQ_M, PQ_NBITS,
-                                     faiss.METRIC_INNER_PRODUCT)
-            sample = cand_rows[::max(1, len(cand_rows) // 1_000_000)][:1_000_000]
-            index.train(embs[field][sample].float().cpu().numpy())
-            for start in range(0, len(cand_rows), 2_000_000):
-                block = cand_rows[start:start + 2_000_000]
-                index.add(embs[field][block].float().cpu().numpy())
-            index.nprobe = NPROBE
-            log(field, split, "index ntotal", index.ntotal, "elapsed_s", round(time.time() - t0, 1))
-            for start in range(0, len(q_rows), 50_000):
-                qr = q_rows[start:start + 50_000]
-                _s, nbrs = index.search(embs[field][qr].float().cpu().numpy(), K)
-                valid = (nbrs >= 0).ravel()
-                s1 = np.repeat(qr, K)[valid]
-                rank = np.tile(np.arange(K, dtype=np.int16), len(qr))[valid]
-                cand = cand_rows[np.where(nbrs >= 0, nbrs, 0)].ravel()[valid]
-                sc = _s.ravel()[valid].astype(np.float16)
-                ann_parts.append(pd.DataFrame({"s1_row": s1, "cand_row": cand,
-                                               "field": field, "split": split,
-                                               "rank": rank, "score": sc}))
-            del index
-        log("field ANN done", field)
-    ann = pd.concat(ann_parts, ignore_index=True)
-    eid_arr = np.array(EID_LIST, dtype=object)
-    ann["s1_id"] = eid_arr[ann["s1_row"].to_numpy()]
-    ann["cand_id"] = eid_arr[ann["cand_row"].to_numpy()]
-    ann["pass_id"] = ann["field"].map(PASS).astype("int16")
-    ann = ann[["s1_id", "cand_id", "split", "pass_id", "rank", "score"]]
-    ann.to_parquet(ANN_PATH, index=False)
-    open(ANN_PATH + ".done", "w").write("ok")
-    log("ANN rows", len(ann))
-else:
-    ann = pd.read_parquet(ANN_PATH)
-    embs = None
-    log("ANN cache", len(ann))
+embs = {}
+for field in FIELDS:
+    embs[field] = encode_field_gpu(field)
+    t0 = time.time()
+    for split in ("train", "test"):
+        ann_path = os.path.join(ANN_DIR, "ann_%s_%s.parquet" % (field, split))
+        if os.path.exists(ann_path):
+            continue
+        cand_rows = np.nonzero((SPLIT == split) & ~IS_S1)[0]
+        q_rows = np.nonzero((SPLIT == split) & IS_S1)[0]
+        index = faiss.IndexIVFPQ(faiss.IndexFlatIP(DIM), DIM, NLIST, PQ_M, PQ_NBITS,
+                                 faiss.METRIC_INNER_PRODUCT)
+        sample = cand_rows[::max(1, len(cand_rows) // 1_000_000)][:1_000_000]
+        index.train(embs[field][sample].float().cpu().numpy())
+        for start in range(0, len(cand_rows), 2_000_000):
+            block = cand_rows[start:start + 2_000_000]
+            index.add(embs[field][block].float().cpu().numpy())
+        index.nprobe = NPROBE
+        log(field, split, "index ntotal", index.ntotal, "elapsed_s", round(time.time() - t0, 1))
+        writer = None
+        for start in range(0, len(q_rows), 50_000):
+            qr = q_rows[start:start + 50_000]
+            _s, nbrs = index.search(embs[field][qr].float().cpu().numpy(), K)
+            valid = (nbrs >= 0).ravel()
+            s1 = eid_arr[np.repeat(qr, K)[valid]]
+            cand = eid_arr[cand_rows[np.where(nbrs >= 0, nbrs, 0)].ravel()[valid]]
+            tbl = pa.table({
+                "s1_id": pa.array(s1.tolist()),
+                "cand_id": pa.array(cand.tolist()),
+                "split": pa.array([split] * int(valid.sum())),
+                "pass_id": pa.array(np.full(int(valid.sum()), PASS[field], dtype=np.int16)),
+                "rank": pa.array(np.tile(np.arange(K, dtype=np.int16), len(qr))[valid]),
+                "score": pa.array(_s.ravel()[valid].astype(np.float16)),
+            })
+            if writer is None:
+                writer = pq.ParquetWriter(ann_path, tbl.schema, compression="zstd")
+            writer.write_table(tbl)
+            del s1, cand, tbl
+        if writer is not None:
+            writer.close()
+        del index
+        torch.cuda.empty_cache()
+    log("field ANN done", field)
 
-# --- union + cap (DuckDB) ---------------------------------------------------
+ANN_GLOB = (ANN_DIR + "/*.parquet")
 con = duckdb.connect()
 con.execute("SET memory_limit='48GB'")
 con.execute("SET threads=8")
 con.execute("SET preserve_insertion_order=false")
 con.execute("SET temp_directory='" + TMP + "'")
-con.register("ann_df", ann[["s1_id", "cand_id", "split", "pass_id", "rank", "score"]])
 
 summary = {"K": K, "CAP": CAP, "fields": FIELDS}
 for split, cand_path in (("train", CAND_TRAIN), ("test", CAND_TEST)):
@@ -224,7 +224,7 @@ for split, cand_path in (("train", CAND_TRAIN), ("test", CAND_TEST)):
     con.execute(
         "CREATE OR REPLACE TEMP TABLE annc AS SELECT s1_id, cand_id, MIN(pass_id) AS ann_pass, "
         "MIN(rank) AS ret_rank, MAX(score) AS ret_score, COUNT(DISTINCT pass_id) AS ret_channel_count "
-        "FROM ann_df WHERE split = '" + split + "' GROUP BY s1_id, cand_id")
+        "FROM read_parquet('" + ANN_GLOB + "') WHERE split = '" + split + "' GROUP BY s1_id, cand_id")
     con.execute(
         """
         CREATE OR REPLACE TEMP TABLE merged AS
@@ -250,35 +250,32 @@ for split, cand_path in (("train", CAND_TRAIN), ("test", CAND_TEST)):
         "FROM capped) TO '" + out + "' (FORMAT PARQUET, COMPRESSION ZSTD)")
     summary[split + "_candidates"] = int(n)
     log(split, "candidates", n)
+    # free the ANN parquets for this split's field data? keep for other split
 con.close()
 
-# --- cosines for the union --------------------------------------------------
-if embs is None:
-    log("WARNING: embeddings not resident (ANN cached) — skipping cosines")
-else:
-    for split in ("train", "test"):
-        out = os.path.join(OUT, "cosine_%s.parquet" % split)
-        if os.path.exists(out):
-            continue
-        cands = pd.read_parquet(os.path.join(OUT, "candidates_%s.parquet" % split), columns=["s1_id", "cand_id"])
-        r1 = np.fromiter((row_of.get(x, -1) for x in cands["s1_id"]), dtype=np.int64, count=len(cands))
-        r2 = np.fromiter((row_of.get(x, -1) for x in cands["cand_id"]), dtype=np.int64, count=len(cands))
-        cols = {}
-        for field in FIELDS:
-            cos = np.empty(len(cands), dtype=np.float16)
-            B = 4_000_000
-            for start in range(0, len(cands), B):
-                a = embs[field][torch.from_numpy(r1[start:start + B]).cuda()].float()
-                b = embs[field][torch.from_numpy(r2[start:start + B]).cuda()].float()
-                cos[start:start + B] = (a * b).sum(1).to(torch.float16).cpu().numpy()
-                del a, b
-            cols[field + "_e5_cos"] = cos
-            log(split, "cosine", field, len(cands))
-        tbl = pa.table({"s1_id": pa.array(cands["s1_id"].tolist()),
-                        "cand_id": pa.array(cands["cand_id"].tolist()),
-                        **{k: pa.array(v) for k, v in cols.items()}})
-        pq.write_table(tbl, out, compression="zstd")
-        log("wrote", out)
+for split in ("train", "test"):
+    out = os.path.join(OUT, "cosine_%s.parquet" % split)
+    if os.path.exists(out):
+        continue
+    cands = pd.read_parquet(os.path.join(OUT, "candidates_%s.parquet" % split), columns=["s1_id", "cand_id"])
+    r1 = np.fromiter((row_of.get(x, -1) for x in cands["s1_id"]), dtype=np.int64, count=len(cands))
+    r2 = np.fromiter((row_of.get(x, -1) for x in cands["cand_id"]), dtype=np.int64, count=len(cands))
+    cols = {}
+    for field in FIELDS:
+        cos = np.empty(len(cands), dtype=np.float16)
+        B = 4_000_000
+        for start in range(0, len(cands), B):
+            a = embs[field][torch.from_numpy(r1[start:start + B]).cuda()].float()
+            b = embs[field][torch.from_numpy(r2[start:start + B]).cuda()].float()
+            cos[start:start + B] = (a * b).sum(1).to(torch.float16).cpu().numpy()
+            del a, b
+        cols[field + "_e5_cos"] = cos
+        log(split, "cosine", field, len(cands))
+    tbl = pa.table({"s1_id": pa.array(cands["s1_id"].tolist()),
+                    "cand_id": pa.array(cands["cand_id"].tolist()),
+                    **{k: pa.array(v) for k, v in cols.items()}})
+    pq.write_table(tbl, out, compression="zstd")
+    log("wrote", out)
 
 json.dump(summary, open(os.path.join(OUT, "e4_summary.json"), "w"), indent=2)
 log("E4 COMPLETE", json.dumps(summary))
