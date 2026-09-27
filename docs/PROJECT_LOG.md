@@ -192,5 +192,32 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - Blocked on: placing `entities.parquet` + `pairs_{train,valfull}.parquet` (~2.4 GB) into the Colab
   session (agent cannot upload >100 MB; needs Files panel / Drive by a human).
 
+## 2026-09-27 — E1 on Kaggle, fully automated (no manual uploads)
+
+- Discovered no Kaggle MCP tool, but an authenticated Kaggle CLI is present (`KAGGLE_API_TOKEN`,
+  user `gunjanpal001`, auth_method ACCESS_TOKEN). Switched E1's GPU stage from manual Colab to
+  **automated Kaggle** per the user's request.
+- Reused the existing private dataset `gunjanpal001/amz-er-2026-raw` (the 7 raw TSVs) so entities
+  (with raw `business_name`/`business_address`) are built **on Kaggle**, avoiding the 1.86 GB upload.
+  Uploaded only a new private dataset `gunjanpal001/amz-er-2026-e1-pairs` (pairs_train 212 MB +
+  pairs_valfull 355 MB).
+- `notebooks/e1_runner.py` (env-agnostic, shared by Kaggle kernel + Colab notebook): auto-detects
+  Kaggle (`/kaggle/input`) vs Colab, builds `entities.parquet` from raw TSVs, encodes three fields
+  (name/addr/entity) with `intfloat/multilingual-e5-small` revision
+  `614241f622f53c4eeff9890bdc4f31cfecc418b3`, shared `"passage: "` prefix, and computes per-pair
+  cosines via numpy argsort + sequential memmap reads.
+- Bugs caught by a 200k-entity smoke run (kernel `amz-er-e1-smoke`):
+  - dataset mount path is `/kaggle/input/datasets/<owner>/<slug>` (not `/kaggle/input/<slug>`) →
+    input discovery now walks `/kaggle/input`; dataset IDs unchanged.
+  - empty `business_address` → `None` → `TypeError` in text concat → coalesce to `""`.
+  - merge assumed all three fields → made field-aware.
+  - kaggle CLI log download broke on Windows charmap → installed `kaggle` into the venv and ran it
+    with `PYTHONUTF8=1`.
+- Smoke (200k entities, 3 fields): entities 24,229,173 built from TSVs; encodes name 24.5 s /
+  addr 34.2 s / entity 51.9 s (~6-8k texts/s); merge + zip OK. Full-run estimate ~3-3.5 h.
+- Full run launched: kernel **`gunjanpal001/amz-er-e1-embeddings`** (script, private, GPU T4x2,
+  internet on). Outputs: `/kaggle/working/cosine_{train,valfull}.parquet` + `cosine_e5_out.zip`.
+  Smoke kernel `amz-er-e1-smoke` kept as a reproduction/testing artifact.
+
 
 
