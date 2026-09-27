@@ -28,6 +28,7 @@ FEATURE_ORDER = [
     "addr_missing", "addr_len_diff", "same_country", "is_s2", "pass_id", "block_score",
     "s1_degree", "cand_degree",
     "name_char3_cos", "name_roman_char3_cos", "addr_char3_cos",
+    "name_e5_cos", "addr_e5_cos", "entity_e5_cos",
 ]
 
 
