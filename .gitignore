@@ -41,3 +41,7 @@ dist/
 
 # E1 model backup (preserved in git 11b88bc)
 code/business_entity_resolution/models_e1/
+
+# Submission staging (large files; README is tracked)
+SUBMIT/*.tsv
+SUBMIT/*.zip
