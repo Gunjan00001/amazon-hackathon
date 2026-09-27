@@ -72,11 +72,12 @@ def _find_file(name, base="/kaggle/input"):
     return None
 
 
-TSV = _find_file("train_source1.tsv")
-RAW_TRAIN = os.path.dirname(os.path.dirname(TSV)) + "/train" if TSV else None
-VALUES = os.path.dirname(_find_file("valfull_s1_ids.parquet") or "")
+def _raw_train_tsvs():
+    return [p for p in (_find_file("train_source%d.tsv" % s) for s in (1, 2, 3)) if p]
+
+
 GT = _find_file("train_ground_truth.tsv")
-log("RAW_TRAIN", RAW_TRAIN, "VALUES", VALUES, "GT", GT)
+log("raw train TSVs", _raw_train_tsvs(), "GT", GT)
 
 
 # --- entities (train only) --------------------------------------------------
@@ -84,8 +85,9 @@ def build_entities():
     ent_path = os.path.join(TMP, "entities.parquet")
     if os.path.exists(ent_path):
         return ent_path
-    raw = [os.path.join(RAW_TRAIN, "train_source%d.tsv" % s) for s in (1, 2, 3)
-           if os.path.exists(os.path.join(RAW_TRAIN, "train_source%d.tsv" % s))]
+    raw = _raw_train_tsvs()
+    if not raw:
+        raise SystemExit("no train TSVs found")
     con = duckdb.connect()
     con.execute("SET memory_limit='8GB'")
     con.execute("SET threads=4")

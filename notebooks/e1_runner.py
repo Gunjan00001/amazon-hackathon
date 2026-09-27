@@ -62,12 +62,9 @@ def _find_file(name, base="/kaggle/input"):
 if ON_KAGGLE:
     _pairs = _find_file("pairs_train.parquet")
     PAIRS_DIR = os.path.dirname(_pairs) if _pairs else "/kaggle/input/amz-er-2026-e1-pairs"
-    _tsv = _find_file("train_source1.tsv")
-    RAW_DIR = os.path.dirname(os.path.dirname(_tsv)) if _tsv else None
     OUT = "/kaggle/working"
     TMP = "/kaggle/temp/e1"
 else:
-    RAW_DIR = None
     PAIRS_DIR = "/content/colab_in"
     OUT = "/content/colab_out"
     TMP = "/content/tmp"
@@ -90,18 +87,23 @@ EXPECT_ENTITIES = 24229173
 
 
 # --- entities ---------------------------------------------------------------
+def _raw_tsvs():
+    found = []
+    for split in ("train", "test"):
+        for source in (1, 2, 3):
+            path = _find_file("%s_source%d.tsv" % (split, source))
+            if path:
+                found.append(path)
+    return found
+
+
 def build_entities_from_tsv():
     ent_path = os.path.join(TMP, "entities.parquet")
     if os.path.exists(ent_path):
         return ent_path
-    raw = [
-        os.path.join(RAW_DIR, split, "%s_source%d.tsv" % (split, source))
-        for split in ("train", "test")
-        for source in (1, 2, 3)
-        if os.path.exists(os.path.join(RAW_DIR, split, "%s_source%d.tsv" % (split, source)))
-    ]
+    raw = _raw_tsvs()
     if not raw:
-        raise SystemExit("no raw TSVs under " + str(RAW_DIR))
+        raise SystemExit("no raw TSVs found under /kaggle/input")
     con = duckdb.connect()
     con.execute("SET memory_limit='8GB'")
     con.execute("SET threads=4")
@@ -128,13 +130,13 @@ def resolve_entities():
             log("kaggle/input:", sorted(os.listdir("/kaggle/input")))
         except Exception:
             pass
-    log("RAW_DIR", RAW_DIR, "PAIRS_DIR", PAIRS_DIR)
+    log("PAIRS_DIR", PAIRS_DIR, "raw_tsvs", len(_raw_tsvs()) if ON_KAGGLE else 0)
     for cand in (os.path.join(TMP, "entities.parquet"), os.path.join(PAIRS_DIR, "entities.parquet")):
         if os.path.exists(cand):
             return cand
-    if RAW_DIR and os.path.isdir(RAW_DIR):
+    if ON_KAGGLE and _raw_tsvs():
         return build_entities_from_tsv()
-    raise SystemExit("no entities source found (RAW_DIR=%s PAIRS_DIR=%s)" % (RAW_DIR, PAIRS_DIR))
+    raise SystemExit("no entities source found (PAIRS_DIR=%s)" % PAIRS_DIR)
 
 
 ENTITIES = resolve_entities()
