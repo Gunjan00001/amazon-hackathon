@@ -59,8 +59,7 @@ def write_training_pairs(cfg, split="train"):
     con.execute(f"SET temp_directory='{(data / 'tmp').as_posix()}'")
     con.execute("PRAGMA max_temp_directory_size='50GiB'")
     con.execute(
-        f"CREATE TABLE cand AS SELECT s1_id, cand_id, is_s2, pass_id, block_score "
-        f"FROM read_parquet('{candidates}')"
+        f"CREATE TABLE cand AS SELECT * FROM read_parquet('{candidates}')"
     )
     con.execute(
         f"CREATE TABLE truth AS SELECT source1_entity_id AS s1_id, UNNEST(string_split(matched_entity_ids, ',')) AS cand_id "
@@ -101,8 +100,7 @@ def write_inference_pairs(cfg, split="test"):
     con.execute(f"SET temp_directory='{(data / 'tmp').as_posix()}'")
     con.execute("PRAGMA max_temp_directory_size='50GiB'")
     con.execute(
-        f"COPY (SELECT s1_id, cand_id, is_s2, pass_id, block_score "
-        f"FROM read_parquet('{candidates}')) TO '{out.as_posix()}' (FORMAT PARQUET)"
+        f"COPY (SELECT * FROM read_parquet('{candidates}')) TO '{out.as_posix()}' (FORMAT PARQUET)"
     )
     rows = con.execute(f"SELECT COUNT(*) FROM read_parquet('{out.as_posix()}')").fetchone()[0]
     con.close()

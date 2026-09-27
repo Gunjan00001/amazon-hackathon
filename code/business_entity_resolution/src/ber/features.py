@@ -29,6 +29,7 @@ FEATURE_ORDER = [
     "s1_degree", "cand_degree",
     "name_char3_cos", "name_roman_char3_cos", "addr_char3_cos",
     "name_e5_cos", "addr_e5_cos", "entity_e5_cos",
+    "ret_rank", "ret_score", "ret_channel_count",
 ]
 
 
@@ -247,6 +248,12 @@ def _feature_block(merged, char_vec=None):
     out["is_s2"] = merged["is_s2"].astype(np.float32)
     out["pass_id"] = merged["pass_id"].astype(np.float32)
     out["block_score"] = merged["block_score"].astype(np.float32)
+    out["ret_rank"] = (merged["ret_rank"].astype(np.float32) if "ret_rank" in merged.columns
+                       else np.float32(-1.0))
+    out["ret_score"] = (merged["ret_score"].astype(np.float32) if "ret_score" in merged.columns
+                        else np.float32(0.0))
+    out["ret_channel_count"] = (merged["ret_channel_count"].astype(np.float32)
+                                if "ret_channel_count" in merged.columns else np.float32(0.0))
     out["s1_degree"] = merged["s1_degree"].astype(np.float32)
     out["cand_degree"] = merged["cand_degree"].astype(np.float32)
     if char_vec is None:
@@ -356,9 +363,11 @@ def _phase1_merged(cfg, split, n_parts=16, meta_split=None):
     con.execute("CREATE TEMP TABLE cdeg AS SELECT cand_id, count(*) AS n FROM pairs GROUP BY cand_id")
 
     label_sel = "p.label," if _pairs_has_label(pairs_path) else ""
+    _pnames = pq.ParquetFile(pairs_path).schema_arrow.names
+    ret_sel = "".join(f"p.{c}, " for c in ("ret_rank", "ret_score", "ret_channel_count") if c in _pnames)
     sql = f"""
     SELECT
-        p.s1_id, p.cand_id, p.is_s2, p.pass_id, p.block_score, {label_sel}
+        p.s1_id, p.cand_id, p.is_s2, p.pass_id, p.block_score, {ret_sel}{label_sel}
         s.name_norm, s.name_fold, s.name_roman, s.name_tokens, s.name_script,
         s.addr_norm, s.addr_raw_missing, s.house_no, s.street_tokens, s.postal,
         s.state_key, s.landmark_flag, coalesce(s.country, '') AS country,
