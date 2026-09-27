@@ -38,3 +38,6 @@ code/business_entity_resolution/models_baseline_2.0.0/
 
 # Submission build output
 dist/
+
+# E1 model backup (preserved in git 11b88bc)
+code/business_entity_resolution/models_e1/

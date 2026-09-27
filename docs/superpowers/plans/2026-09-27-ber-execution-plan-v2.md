@@ -429,3 +429,63 @@ $env:KAGGLE_API_TOKEN=(Get-Content "$env:TEMP\opencode\kg_gunjanpal.txt" -Raw)
 After each phase: append to `docs/PROJECT_LOG.md`; update `docs/RESULTS.md` on new believable metrics;
 add a `docs/DECISIONS.md` entry for adopted changes; add a `docs/FAILURES_AND_FIXES.md` entry for every
 non-trivial bug (F16-style: symptom, cause, fix). Refresh `graphify-out/` at milestones.
+
+
+---
+
+## 14. Remaining steps — ordered checklist, estimates, and E4 spec
+
+### 14.1 Order (dependencies are strict)
+1. **E4 decide** operating point from E3 curves (local).
+2. **E4 build** production candidates + cosines for train/valfull/test (Blackwell interactive).
+3. **E4 audit + FREEZE** (candidate_set_frozen.json, sha256) (local).
+4. **E5** matcher on the frozen candidates (local) -> gate > 0.85900.
+5. **E6** cross-encoder (Blackwell, optional) -> gate > E5.
+6. **E7** global assignment (local) -> gate > E6/E5.
+7. **E8** pseudo-labeling (local, optional) -> gate > E7, 2-seed stable.
+8. **E9** DeepSeek rerank (Blackwell, optional, last) -> gate > E8.
+9. **E10** ensemble/meta (local, optional) -> gate > E9.
+10. **E11** calibrate -> test features -> predict -> validator PASS -> package TSV (local).
+
+Never tune thresholds while candidates change; freeze before E5; calibrate last.
+
+### 14.2 Time estimates (rough; measured where noted)
+| Step | Where | Estimate |
+|---|---|---|
+| E4 build (re-encode + ANN index train+test + cosines) | Blackwell | 2.5-3.5 h |
+| E4 audit + freeze | local | 5-15 min |
+| E5 features / train / validation | local | 40-90 min / ~10 min / 10-15 min |
+| E6 cross-encoder | Blackwell | 2-4 h |
+| E7 assignment | local | 10-30 min |
+| E8 pseudo | local | 1-2 h |
+| E9 DeepSeek | Blackwell | 1-2 h |
+| E10 meta | local | 20-40 min |
+| E11 calibrate / test features / predict+validate+package | local | 5 min / 30-60 min / 15-30 min |
+Minimum viable path (E4->freeze->E5->E11): ~5-7 h compute + one ~3 h Blackwell run.
+
+### 14.3 E4 operating point (from measured E3 curves)
+The E3 nn_pairs_per_s1_upper = K * 3 (3 channels, pre-dedup). To respect a train budget of
+<=600M candidates (~270 candidates/S1 over 2.2M S1), K per channel must be small:
+- K=50/channel -> ~150/S1 upper, pair recall 0.9496, oracle 0.9810
+- K=100/channel -> ~300/S1 upper, pair recall 0.9544, oracle 0.9830
+K=2000 (recall 0.9700 / oracle 0.9892) is **not** budget-feasible (would be billions of candidates).
+**Chosen starting point: K=100/channel with per-S1 cap 250 and a <=600M train budget, adaptive K up
+for India / short / non-Latin names.** Audit, then adjust K/cap to the best recall/cost knee.
+
+### 14.4 E4 candidate contract
+{split}_candidates.parquet = (s1_id, cand_id, pass_id, block_score, is_s2) plus per-channel
+
+ank_<ch> and score_<ch> and 
+et_channel_count; pass ids 11=e5-name, 12=e5-addr, 13=e5-entity,
+14=char-ngram, 15=phonetic (whole-name, never per-token). Union with lexical passes 1-10.
+Also emit cosine_{train,valfull,test}.parquet (
+ame_e5_cos,ddr_e5_cos,entity_e5_cos) for the
+**union** pairs (E1 cosines covered only the old lexical pairs).
+
+### 14.5 E4 Blackwell run outline (interactive)
+1. Encode name/addr/entity for all 24.2M entities (as in E1g).
+2. Build IVF-PQ indexes over train S2/S3 **and** test S2/S3 per field.
+3. Query train held-out S1 + test S1 at K; keep per-channel rank/score.
+4. Union with the existing lexical candidates; apply per-S1 cap / adaptive K / budget.
+5. Compute e5 cosines for the union pairs (train/valfull/test).
+6. Write candidate + cosine parquets to /kaggle/working; download.

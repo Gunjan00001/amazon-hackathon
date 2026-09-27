@@ -261,3 +261,21 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - Conclusion: E1 feature gain is small (lexical ceiling binds); the E3 ANN union lifts the oracle
   0.9122 -> 0.9892. 0.99 not reachable at K<=2000 (recall 0.97). Next: E4 production multi-channel
   candidates + adaptive K, then matcher on the new candidate set.
+
+
+## 2026-09-27 — Final submission (safe path) prepared
+
+- The RTX Pro 6000 re-run (E4) was not available in time, so the final submission uses the adopted
+  1.4.1 baseline model (36 features; held-out 0.8577) on the existing lexical candidates. The E1 model
+  (39 features, held-out 0.8590) could not be applied to test (test features lack the e5 cosine columns
+  and no GPU re-run was possible); it is preserved at models_e1/ and in git (11b88bc). models/ was
+  restored from models_baseline_2.0.0/.
+- Regenerated test submission with baseline calibration (global 0.95, India 0.925 / US 0.95,
+  singleton_tau 0.30, one-to-one) via er.cli predict --split test --one-to-one --reuse-predictions:
+  matching_results.tsv 1,732,544 rows, 212,118 empty (singletons), 1,520,426 non-empty.
+- Validator: **PASS** (0 blocking issues; 554 empty candidate rows).
+- Package refreshed: dist/AA.._submission/ (src synced), dist/AA..__submission.zip (1,379.6 MB,
+  Python zipfile/ZIP64), submission/matching_results.tsv, dist/leaderboard_upload/matching_results.tsv.
+- E4 Blackwell run reached ield ANN done entity then OOM'd on the ~2.6B-row ANN concat; a streaming
+  rewrite was pushed (lackwell-001 v11) but not re-run for time. E3 measurement stands: the e5 ANN
+  union lifts the oracle 0.9122 -> 0.9892 at K=2000.
