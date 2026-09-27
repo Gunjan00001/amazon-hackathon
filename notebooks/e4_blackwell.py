@@ -54,13 +54,14 @@ MODEL_REVISION = "614241f622f53c4eeff9890bdc4f31cfecc418b3"
 DIM = 384
 PREFIX = "passage: "
 MAXLEN = 64
-K = int(os.environ.get("E4_K", "100"))
+K = int(os.environ.get("E4_K", "64"))
 CAP = int(os.environ.get("E4_CAP", "250"))
 NLIST = 4096
 PQ_M = 48
 PQ_NBITS = 8
 NPROBE = 32
-FIELDS = ["name", "addr", "entity"]
+FIELDS = ["name", "addr", "entity"]        # encoded (needed for the cosine features)
+ANN_FIELDS = ["addr", "entity"]            # ANN index/query only (build is CPU-bound; name is largely covered by entity)
 PASS = {"name": 11, "addr": 12, "entity": 13}
 EXPECT_N = 24229173
 
@@ -169,6 +170,7 @@ def encode_field_gpu(field):
 embs = {}
 for field in FIELDS:
     embs[field] = encode_field_gpu(field)
+for field in ANN_FIELDS:
     t0 = time.time()
     for split in ("train", "test"):
         ann_path = os.path.join(ANN_DIR, "ann_%s_%s.parquet" % (field, split))
@@ -217,7 +219,7 @@ con.execute("SET threads=8")
 con.execute("SET preserve_insertion_order=false")
 con.execute("SET temp_directory='" + TMP + "'")
 
-summary = {"K": K, "CAP": CAP, "fields": FIELDS}
+summary = {"K": K, "CAP": CAP, "fields": FIELDS, "ann_fields": ANN_FIELDS}
 for split, cand_path in (("train", CAND_TRAIN), ("test", CAND_TEST)):
     con.execute("CREATE OR REPLACE TEMP TABLE lex AS SELECT s1_id, cand_id, pass_id, block_score, is_s2 "
                 "FROM read_parquet('" + cand_path + "')")
