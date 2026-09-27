@@ -230,11 +230,13 @@ def field_min_rank(field):
         q = queries[start:start + QB]
         _scores, nbrs = index.search(q, K_MAX)
         qrow = H[start:start + QB]
-        s1_rep = np.repeat(qrow, K_MAX)
-        rank_rep = np.tile(np.arange(K_MAX, dtype=np.int16), len(qrow))
+        valid = (nbrs >= 0).ravel()
+        s1_rep = np.repeat(qrow, K_MAX)[valid]
+        rank_rep = np.tile(np.arange(K_MAX, dtype=np.int16), len(qrow))[valid]
+        cand_rep = cand_rows[np.where(nbrs >= 0, nbrs, 0)].ravel()[valid]
         tbl = pa.table({
-            "s1_row": pa.array(s1_rep, pa.int32()),
-            "cand_row": pa.array(cand_rows[nbrs].ravel().astype(np.int32)),
+            "s1_row": pa.array(s1_rep.astype(np.int32)),
+            "cand_row": pa.array(cand_rep.astype(np.int32)),
             "rank": pa.array(rank_rep),
         })
         if writer is None:
