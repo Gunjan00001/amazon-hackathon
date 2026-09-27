@@ -28,6 +28,10 @@ DATA/pairs/
 DATA/features/
 DATA/colab_in/
 DATA/colab_out/
+DATA/kaggle/
+
+# Manual Kaggle downloads / staging (large parquet)
+kaggle Downloaded/
 
 # Local baseline model snapshot (redundant with git tag 2.0.0)
 code/business_entity_resolution/models_baseline_2.0.0/

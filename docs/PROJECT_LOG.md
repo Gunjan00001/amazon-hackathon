@@ -219,5 +219,45 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
   internet on). Outputs: `/kaggle/working/cosine_{train,valfull}.parquet` + `cosine_e5_out.zip`.
   Smoke kernel `amz-er-e1-smoke` kept as a reproduction/testing artifact.
 
+## 2026-09-27 — second Kaggle account (`gunjanpal`) + RTX Pro 6000 for E3
+
+- User requested use of `kaggle.com/code/gunjanpal/the-gpu-one`, which is a bare template notebook
+  configured with `machine_shape: "NvidiaRtxPro6000"` (Blackwell, ~96 GB VRAM) — far better than the
+  T4x2. It belongs to a second account, `gunjanpal`; the original token is `gunjanpal001` (403 on the
+  other account). User supplied a `gunjanpal` API token; it is stored at
+  `%TEMP%\opencode\kg_gunjanpal.txt` (not in the repo) and applied per-command via `KAGGLE_API_TOKEN`.
+  `gunjanpal001` remains the token for the in-flight E1 kernel.
+- `gunjanpal` had no datasets, and private datasets cannot be shared across accounts (and the challenge
+  data must not be made public, RULES §2), so the inputs were re-created under `gunjanpal`:
+  `gunjanpal/amz-er-2026-raw` (7 TSVs, flat) and `gunjanpal/amz-er-2026-e1-valfull`
+  (`valfull_pairs.parquet`, `valfull_s1_ids.parquet`).
+- Kaggle CLI skips subfolders on `datasets create` (needs `--dir-mode`); fixed by uploading the TSVs
+  flat and making both runners locate TSVs individually via `_find_file` (layout-agnostic).
+- E3 runner (`notebooks/e3_kaggle.py`) staged for `gunjanpal` with `machine_shape: NvidiaRtxPro6000`:
+  train-only encode (12.5M entities) → IVF-PQ over Source-2/3 → held-out Source-1 query at K=2000 →
+  per-truth-pair min ANN rank. Recall/oracle/cost curves are computed locally.
 
 
+
+
+
+
+## 2026-09-27 — E1g + E3 on RTX Pro 6000 (Blackwell, interactive)
+
+- Blackwell reality: machine_shape is ignored for API/CLI runs (always T4x2); the RTX Pro 6000
+  (~96-102 GB) is only offered in interactive browser sessions with Internet OFF. Built offline
+  dataset gunjanpal/amz-er-2026-offline (faiss wheel + e5 model) and consolidated inputs into
+  gunjanpal/amz-er-2026-all; ran gunjanpal/blackwell-001 interactively (wall 7550 s).
+- E1g: 24,229,173 entities x 3 fields encoded (~27k texts/s); per-pair cosine for train (30,494,378)
+  and valfull (60,912,676).
+- E1 gate: merged e5 cosines; retrained (436 trees); full-candidate held-out uncalibrated 0.85939
+  (US 0.8989 / India 0.8001); calibrated **0.85900** (US 0.8994 / India 0.7984) vs baseline 0.85772
+  -> **PROMOTED** (FEATURE_ORDER 39 features; commit 11b88bc).
+- E3 ANN ceiling (DATA/reports/exp_E3_curves.json): e5-small full-384 IVF-PQ over train S2/S3
+  (10.32M), held-out S1 query K=2000, union with lexical:
+  K=50 recall 0.9496 / oracle 0.9810; K=2000 recall **0.9700** / oracle **0.9892** (vs lexical-only
+  0.8142 / 0.9122). Channel attribution over 283,130 lexical-missed truth pairs: addr 200,724,
+  entity 165,818, name 87,692, any 237,473, multiple 156,141, none 45,657.
+- Conclusion: E1 feature gain is small (lexical ceiling binds); the E3 ANN union lifts the oracle
+  0.9122 -> 0.9892. 0.99 not reachable at K<=2000 (recall 0.97). Next: E4 production multi-channel
+  candidates + adaptive K, then matcher on the new candidate set.
