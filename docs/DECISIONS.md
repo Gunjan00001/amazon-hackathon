@@ -123,3 +123,19 @@ Each entry: decision, context, alternatives, and consequence.
   matcher still has headroom (oracle 0.9122) and the blocking ceiling (0.8142) remains the eventual
   bound.
 
+
+
+## D17 - Archive strategy: repo keeps code+docs, data stays out of git
+
+- **Context:** the local working folder (~80 GB) is being deleted; the user wanted "everything" on
+  GitHub with Git LFS.
+- **Constraint:** plain git caps files at 100 MB; Git LFS caps files at 2 GB with ~1 GB free storage;
+  `DATA/` TSVs are non-redistributable (`RULES.md` 2.2) and already mirrored to a private Kaggle
+  dataset. candidate_pairs.tsv is 3.03 GiB - above the LFS cap.
+- **Decision:** GitHub `main` carries all source, tests, configs, models, docs and the knowledge
+  graph; raw data and intermediates stay out (regenerable). The large submission artifacts that fit
+  under the LFS cap (submission zip + split `candidate_pairs` parts) are tracked via Git LFS.
+  `docs/HANDOVER.md` + `docs/ARCHIVE_MANIFEST.md` document exactly what is excluded and how to
+  restore it.
+- **Consequence:** a fresh clone restores a fully working pipeline (after fetching the raw data from
+  the private Kaggle mirror); no generated intermediate needs to be preserved.

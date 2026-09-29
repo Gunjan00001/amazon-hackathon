@@ -29,6 +29,13 @@
       "input_tokens": 0,
       "output_tokens": 0,
       "files": 56
+    },
+    {
+      "date": "2026-09-29T00:36:29.202338+00:00",
+      "input_tokens": 0,
+      "output_tokens": 0,
+      "files": 76,
+      "note": "2026-09-29 full rebuild + incremental merge to include HANDOVER/ARCHIVE docs"
     }
   ],
   "total_input_tokens": 9500,

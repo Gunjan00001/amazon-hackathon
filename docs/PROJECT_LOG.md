@@ -279,3 +279,20 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - E4 Blackwell run reached ield ANN done entity then OOM'd on the ~2.6B-row ANN concat; a streaming
   rewrite was pushed (lackwell-001 v11) but not re-run for time. E3 measurement stands: the e5 ANN
   union lifts the oracle 0.9122 -> 0.9892 at K=2000.
+
+
+## 2026-09-29 - Repository archival / handover
+
+- Prepared the repo for the local working folder to be deleted. Confirmed `main` was already in
+  sync with `origin/main` (93 tracked files; tags `0.1.0`-`2.1.0`, plus `submission-0.811`).
+- Measured the full folder: **~80 GB** - `DATA/` 62.8 GB, `SUBMIT/` 7.6 GB, `dist/` 4.6 GB,
+  `output/` 3.2 GB, `kaggle Downloaded/` 0.9 GB, `.venv/` 0.5 GB. GitHub cannot host this
+  (100 MB plain-git cap, 2 GB Git-LFS per-file cap, ~1 GB free LFS quota), and `RULES.md` section 2.2
+  forbids committing the raw `DATA/` TSVs.
+- Added **`docs/HANDOVER.md`** (restore guide: clone+LFS, Python 3.12 env, raw-data sources,
+  rebuild commands, results) and **`docs/ARCHIVE_MANIFEST.md`** (per-directory inventory with byte
+  sizes, git status, regeneration paths, LFS object list).
+- Tracked the large submission artifacts with **Git LFS**: `SUBMIT/AA.._submission.zip` (1.28 GiB)
+  and the byte-exact split `SUBMIT/candidate_pairs.tsv.part_{00,01}` (1.51 GiB each); the 3.03 GiB
+  `candidate_pairs.tsv` itself exceeds GitHub's 2 GB LFS cap, so only the split parts are stored.
+- Updated the graphify knowledge graph to include this handover documentation.

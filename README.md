@@ -11,6 +11,8 @@ Status: **2.0.0** — end-to-end pipeline shipped and submitted. Public leaderbo
 | [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md) | Full challenge spec: format, outputs, metric, constraints, fair play. |
 | [`RULES.md`](RULES.md) | Binding project rules: fair play, data handling, engineering, validation, versioning. |
 | [`AGENTS.md`](AGENTS.md) | Working notes for agents: environments, data contracts, blocking/audit contracts, gotchas. |
+| [`docs/HANDOVER.md`](docs/HANDOVER.md) | **Start here after cloning**: what is on GitHub vs. not, how to restore a working state, where the data lives. |
+| [`docs/ARCHIVE_MANIFEST.md`](docs/ARCHIVE_MANIFEST.md) | Full inventory of the original ~80 GB working folder with sizes, git status, and regeneration steps. |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | Metrics: official leaderboard **0.811**, baseline 0.8488, adopted **0.8577**, LOO proxy, output stats. |
 | [`docs/superpowers/plans/2026-09-26-precision-colab.md`](docs/superpowers/plans/2026-09-26-precision-colab.md) | M2 plan (precision lift + Colab embeddings) and its outcome. |
 | [`docs/PROJECT_LOG.md`](docs/PROJECT_LOG.md) | Chronological run log with commands, timings, and measured numbers. |
