@@ -45,3 +45,5 @@ code/business_entity_resolution/models_e1/
 # Submission staging (large files; README is tracked)
 SUBMIT/*.tsv
 SUBMIT/*.zip
+# Large submission artifacts preserved via Git LFS (see docs/ARCHIVE_MANIFEST.md)
+!SUBMIT/AA.._submission.zip

@@ -1,4 +1,6 @@
 # LightGBM text models must keep LF line endings or the model parser fails.
 code/business_entity_resolution/models/lgbm.txt -text
-
 output/matching_results.tsv filter=lfs diff=lfs merge=lfs -text
+SUBMIT/candidate_pairs.tsv.part_01 filter=lfs diff=lfs merge=lfs -text
+SUBMIT/AA.._submission.zip filter=lfs diff=lfs merge=lfs -text
+SUBMIT/candidate_pairs.tsv.part_00 filter=lfs diff=lfs merge=lfs -text
