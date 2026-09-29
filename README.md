@@ -54,6 +54,12 @@ graphify-out/                 # knowledge graph (graph.html, graph.json, report)
 
 Not committed: `DATA/**/*.tsv`, `DATA/**/*.zip`, `.venv/` (see `.gitignore`).
 
+Large deliverables are stored with **Git LFS**: `output/matching_results.tsv`, `SUBMIT/AA.._submission.zip`,
+and `SUBMIT/candidate_pairs.tsv.part_{00,01}` (a byte-exact split of the 3.03 GiB `candidate_pairs.tsv`,
+which exceeds GitHub's 2 GB LFS limit). Run `git lfs pull` after cloning. What is and isn't on GitHub,
+plus restore steps, is documented in [`docs/HANDOVER.md`](docs/HANDOVER.md) and
+[`docs/ARCHIVE_MANIFEST.md`](docs/ARCHIVE_MANIFEST.md).
+
 ## Quickstart
 
 ```powershell

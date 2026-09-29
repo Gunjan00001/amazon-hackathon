@@ -95,8 +95,10 @@ SUBMIT/candidate_pairs.tsv.part_01     (1.51 GiB)
 SUBMIT/AA.._submission.zip             (1.28 GiB)
 ```
 
-Tracked by patterns added to `.gitattributes`. Fetch with `git lfs pull`. GitHub Free includes
-~1 GiB LFS storage; a larger account/data pack is required for the full set.
+Tracked by patterns added to `.gitattributes`. Fetch with `git lfs pull`. The four objects total
+**~4.39 GiB** of LFS storage and were pushed successfully to `origin/main` on 2026-09-29. A clone
+needs Git LFS installed and enough LFS bandwidth/quota; use
+`git lfs pull --include="SUBMIT/candidate_pairs.tsv.part_*"` to fetch selectively.
 
 ---
 
