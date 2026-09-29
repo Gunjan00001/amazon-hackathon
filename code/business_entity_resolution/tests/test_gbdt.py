@@ -1,5 +1,5 @@
 import numpy as np
-from ber.gbdt import predict_scores, split_groups, train_model
+from ber.gbdt import _val_usable, predict_scores, split_groups, train_model
 
 
 def test_split_groups_is_disjoint_and_grouped():
@@ -20,3 +20,22 @@ def test_train_model_separates_easy_signal():
     assert 0.0 <= metrics["best_threshold"] <= 1.0
     scores = predict_scores(model, X)
     assert scores.shape == (n,) and scores.min() >= 0 and scores.max() <= 1
+
+
+def test_val_usable_requires_both_classes_with_mass():
+    assert not _val_usable(np.array([1, 1, 0]))
+    assert not _val_usable(np.array([1, 1, 1, 1, 1, 1], dtype=int))
+    assert _val_usable(np.array([1] * 5 + [0] * 5))
+
+
+def test_train_model_falls_back_when_validation_degenerate():
+    rng = np.random.default_rng(0)
+    n = 300
+    groups = np.repeat(np.arange(5), 60)
+    X = rng.normal(size=(n, 3)).astype("float32")
+    y = (X[:, 0] > 0).astype(int)
+    val_group = np.unique(groups[split_groups(groups)[1]])[0]
+    y[groups == val_group] = 1
+    model, metrics = train_model(X, y, groups)
+    scores = predict_scores(model, X)
+    assert scores.max() - scores.min() > 1e-6

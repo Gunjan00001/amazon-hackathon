@@ -2,12 +2,33 @@
 
 Solution workspace for the Amazon ML Challenge 2026 *Business Entity Resolution* problem: match noisy business records from **Source 2** and **Source 3** to the deduplicated reference **Source 1**, evaluated by macro **F_0.5** (precision-heavy).
 
-Status: **0.1.0** — problem statement, dataset analysis, GBDT benchmark, and project knowledge graph are in place. The end-to-end matching pipeline is next.
+Status: **1.0.0** — submission-ready. The classical cascade (IDF-weighted blocking + LightGBM)
+reaches **validation macro F_0.5 = 0.9740** at **recall ceiling 1.0**, and the two required TSVs
+pass the official validator with `--check-ids`. All compute runs on Kaggle; the local machine
+only edits code, runs unit tests, and validates the final TSVs.
+
+## Submission outputs
+
+| File | Description |
+|---|---|
+| `output/leaderboard_matching_results.tsv` | matches to upload to the Portal (threshold 0.70) |
+| `output/matching_results.tsv` | canonical final matches (same as the leaderboard file) |
+| `output/matching_results_t650.tsv` | alternate threshold 0.65 (validated) |
+| `output/candidate_pairs.tsv` | the 16,167,646 candidate pairs the model scored |
+| `submission/team_submission.zip` | final package: `output/` + `code/` + `Documentation_template.md` |
+
+Interactive/measured metrics: pair AUC 0.99952, average precision 0.99665, blocking
+recall ceiling 1.0, test rows 1,732,544, matched entities 1,310,189 (threshold 0.70).
 
 ## Documentation
 
+Full documentation index: [`docs/README.md`](docs/README.md).
+
 | File | What it covers |
 |---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | Pipeline stages, module map, design rationale, results. |
+| [`docs/REPRODUCE.md`](docs/REPRODUCE.md) | End-to-end reproduction: environment, stages, Kaggle, validation. |
+| [`docs/REPOSITORY_GUIDE.md`](docs/REPOSITORY_GUIDE.md) | Repo/GitHub layout, Git LFS, what is excluded and how to restore it. |
 | [`PROBLEM_STATEMENT.md`](PROBLEM_STATEMENT.md) | Full challenge spec: format, outputs, metric, constraints, fair play. |
 | [`RULES.md`](RULES.md) | Binding project rules: fair play, data handling, engineering, validation, versioning. |
 | [`DATA/student_resource/dataset/DATASET.md`](DATA/student_resource/dataset/DATASET.md) | Measured dataset facts: schemas, row counts, ground-truth analysis, noise and encoding notes. |
@@ -32,7 +53,11 @@ graphify-out/                 # knowledge graph (graph.html, graph.json, report)
 .graphifyignore               # excludes .venv, data TSVs, caches from the graph
 ```
 
-Not committed: `DATA/**/*.tsv`, `DATA/**/*.zip`, `.venv/` (see `.gitignore`).
+Not committed: `DATA/**/*.tsv`, `DATA/**/*.zip`, `.venv/` (see `.gitignore` and
+[`docs/REPOSITORY_GUIDE.md`](docs/REPOSITORY_GUIDE.md)).
+
+Large artifacts (`output/*.tsv`, `submission/team_submission.zip`) are stored with **Git LFS**.
+After cloning run `git lfs install && git lfs pull` to fetch their real contents.
 
 ## Quickstart
 
@@ -77,12 +102,35 @@ python utils/validate_submission.py `
 
 Verdict: quality is tied; LightGBM trains 3–4.5× faster. Full results in `tools/bench_results.json`.
 
+## Automated Kaggle search
+
+`ber.search` runs entirely on Kaggle: it searches blocking parameters (recall ceiling)
+and matcher/threshold parameters, scoring every trial by held-out macro F_0.5
+(S1-grouped, singletons included), then finalizes the best config into the two TSVs.
+Trials are checkpointed to `search/trials.json`.
+
+```powershell
+# from the repo root
+.venv\Scripts\python.exe kaggle\auto.py --plan auto --update-code   # push + wait + fetch + validate
+.venv\Scripts\python.exe kaggle\auto.py --validate-only             # local format gate
+```
+
+## Version log
+
+- `1.0.0` — validated submission: recall ceiling 1.0, validation macro F_0.5 0.9740, cached
+  blocking keys, split search/finalize kernels, official validator PASS, packaged zip.
+- `0.3.0` — autonomous validation-driven search (`ber.search`, `ber.evaluate`), IDF-weighted
+  blocking, robust GBDT validation fallback, and the Kaggle `auto` driver.
+- `0.2.0` — Kaggle-only compute rules and cascade C+B design.
+- `0.1.0` — docs, dataset analysis, GBDT benchmark, knowledge graph.
+
 ## Roadmap
 
-1. Normalize + country-aware address parsing, cached to parquet.
-2. Blocking passes (name/phonetic/rare-token/street/PIN) → `candidate_pairs.tsv`.
-3. Pairwise features → LightGBM matcher, threshold tuned for macro F_0.5.
-4. Predict test matches → `matching_results.tsv`, validate, package the submission zip.
+1. ~~Normalize + country-aware address parsing, cached to parquet.~~ (done)
+2. ~~Blocking passes (name/phonetic/rare-token/street/PIN) → candidates.~~ (done; IDF-ranked)
+3. ~~Pairwise features → LightGBM matcher, threshold tuned for macro F_0.5.~~ (done)
+4. Multi-seed / held-out-country validation; embedding + cross-encoder cascade (v2/v3).
+5. Predict test matches → `matching_results.tsv`, validate, package the submission zip.
 
 ## Fair play
 

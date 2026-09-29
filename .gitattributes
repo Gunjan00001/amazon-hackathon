@@ -1,0 +1,6 @@
+# Git LFS patterns for large or binary artifacts.
+# These files are stored in Git LFS. Run `git lfs install` after cloning.
+*.tsv   filter=lfs diff=lfs merge=lfs -text
+*.zip   filter=lfs diff=lfs merge=lfs -text
+*.parquet filter=lfs diff=lfs merge=lfs -text
+*.png   filter=lfs diff=lfs merge=lfs -text

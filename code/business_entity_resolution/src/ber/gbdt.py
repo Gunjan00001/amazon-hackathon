@@ -18,18 +18,29 @@ def split_groups(groups, val_frac=0.2, seed=42):
     return ~val_mask, val_mask
 
 
+def _val_usable(y_va, min_pos=5, min_neg=5):
+    return int(y_va.sum()) >= min_pos and int((y_va == 0).sum()) >= min_neg
+
+
 def train_model(X, y, groups, params=None):
     model = LGBMClassifier(**(params or PARAMS))
     tr, va = split_groups(groups)
-    model.fit(X[tr], y[tr], eval_set=[(X[va], y[va])], eval_metric="auc",
-              callbacks=[early_stopping(50, verbose=False)])
-    scores = model.predict_proba(X[va])[:, 1]
-    f, th = best_threshold(groups[va], y[va], scores)
-    if len(np.unique(y[va])) < 2:
+    if _val_usable(y[va]):
+        model.fit(X[tr], y[tr], eval_set=[(X[va], y[va])], eval_metric="auc",
+                  callbacks=[early_stopping(50, verbose=False)])
+        scores = model.predict_proba(X[va])[:, 1]
+        f, th = best_threshold(groups[va], y[va], scores)
+        eval_y, eval_scores = y[va], scores
+    else:
+        model.fit(X, y)
+        scores = model.predict_proba(X)[:, 1]
+        f, th = best_threshold(groups, y, scores)
+        eval_y, eval_scores = y, scores
+    if len(np.unique(eval_y)) < 2:
         auc = ap = float("nan")
     else:
-        auc = float(roc_auc_score(y[va], scores))
-        ap = float(average_precision_score(y[va], scores))
+        auc = float(roc_auc_score(eval_y, eval_scores))
+        ap = float(average_precision_score(eval_y, eval_scores))
     metrics = {
         "pair_auc": auc,
         "average_precision": ap,

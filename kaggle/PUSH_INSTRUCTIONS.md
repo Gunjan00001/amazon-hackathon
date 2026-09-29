@@ -1,4 +1,35 @@
-# Kaggle push and run instructions (manual web-UI mode)
+# Kaggle push and run instructions
+
+## Automated flow (preferred)
+
+All compute runs on Kaggle; the local machine only edits code, runs unit tests, and validates.
+
+```powershell
+# 1. local unit tests (fast)
+.venv\Scripts\python.exe -m pytest code\business_entity_resolution\tests -q
+
+# 2. update the code dataset, push + wait + fetch + validate in one command
+.venv\Scripts\python.exe kaggle\auto.py --plan auto --update-code
+
+# 3. validate only (after a manual fetch)
+.venv\Scripts\python.exe kaggle\auto.py --validate-only
+```
+
+`auto.py` runs `push_all.py datasets --only code` (refresh pipeline source), pushes the
+`A1` search kernel (which runs a quick smoke pass on real data first, then the scoped
+search + finalize), waits, fetches outputs into `kaggle/staging/outputs`, collects the two
+TSVs into `output/`, and runs the official validator.
+
+Live progress is visible in the notebook output panel:
+`https://www.kaggle.com/code/gunjanpal001/amz-er-a1-search` (the CLI only exposes logs
+after a run finishes).
+
+To reclaim compute, obsolete kernels can be removed with
+`kaggle kernels delete -y gunjanpal001/<slug>` (this also cancels a running session).
+
+---
+
+## Manual web-UI mode (legacy)
 
 Everything heavy runs on Kaggle. This machine only edits code and validates outputs.
 Read `RULES.md` §6 first. Order: prepare datasets once, then run N1 → N2 → N4 → N6 (v1),

@@ -18,6 +18,12 @@ STAGES = [
      ["--clean-dir", "CLEAN", "--gbdt-dir", "GBDT", "--out-dir", 'ART + "/rerank"']),
     ("N6", "decide", "Threshold, write submission TSVs", False, "ber.stages.decide",
      ["--clean-dir", "CLEAN", "--block-dir", "BLOCK", "--gbdt-dir", "GBDT", "--out-dir", 'ART + "/out"', "--ce-opt"]),
+    ("A1", "search", "Autonomous classical search (blocking + GBDT)", False, "ber.stages.search",
+     ["--clean-dir", "CLEAN", "--out-dir", 'ART + "/search"', "--s1-limit", "120000",
+      "--n-block", "4", "--n-gbdt", "8", "--budget", "7200", "--search-only"]),
+    ("A1f", "finalize", "Finalize best search config into submission TSVs", False, "ber.stages.search",
+     ["--clean-dir", "CLEAN", "--out-dir", 'ART + "/out"', "--search-dir", "SEARCH",
+      "--finalize-only", "--finalize-s1-limit", "500000"]),
 ]
 
 PIP = {
@@ -27,6 +33,8 @@ PIP = {
     "N4": "lightgbm rapidfuzz pyarrow",
     "N5": "sentence-transformers",
     "N6": "rapidfuzz pyarrow",
+    "A1": "anyascii jellyfish rapidfuzz pyarrow lightgbm scikit-learn pandas numpy",
+    "A1f": "anyascii jellyfish rapidfuzz pyarrow lightgbm scikit-learn pandas numpy",
 }
 
 FIND_INPUT = '''
@@ -38,6 +46,7 @@ import zipfile
 from pathlib import Path
 
 os.environ["BER_ARTIFACT_DIR"] = "{art}"
+ART = os.environ["BER_ARTIFACT_DIR"]
 _whl = sorted(glob.glob("/kaggle/input/**/*.whl", recursive=True))
 
 
@@ -97,6 +106,7 @@ BLOCK = find("block")
 EMBED = find("embed")
 GBDT = find("gbdt")
 RERANK = find("rerank")
+SEARCH = find("search")
 
 
 def run(module, *args):
@@ -115,16 +125,17 @@ import os
 from pathlib import Path
 
 ART = os.environ["BER_ARTIFACT_DIR"]
-for sub in ("clean", "block", "embed", "gbdt", "rerank", "out"):
-    for name in ("metrics.json", "stats.json"):
+for sub in ("clean", "block", "embed", "gbdt", "rerank", "search", "out"):
+    for name in ("metrics.json", "stats.json", "best.json", "out_metrics.json"):
         p = Path(ART) / sub / name
         if p.exists():
             print("==", sub, name, "==")
             print(p.read_text(encoding="utf-8"))
 
-out_dir = Path(ART) / "out"
-if out_dir.exists():
-    print("outputs:", sorted(x.name for x in out_dir.glob("*.tsv")))
+for sub in ("search", "out"):
+    d = Path(ART) / sub
+    if d.exists():
+        print("outputs:", sub, sorted(x.name for x in d.glob("*.tsv")))
 '''
 
 
@@ -156,9 +167,9 @@ def run_expression(module, args):
             parts.append('*(["--embed-dir", EMBED] if EMBED else [])')
         elif a == "--ce-opt":
             parts.append('*(["--ce-dir", RERANK] if RERANK else [])')
-        elif a in ("CLEAN", "BLOCK", "GBDT"):
+        elif a in ("CLEAN", "BLOCK", "GBDT", "SEARCH"):
             parts.append(a)
-        elif a in ('ART + "/gbdt"', 'ART + "/rerank"', 'ART + "/out"'):
+        elif a in ('ART + "/gbdt"', 'ART + "/rerank"', 'ART + "/out"', 'ART + "/search"'):
             parts.append(a)
         else:
             parts.append(f'"{a}"')

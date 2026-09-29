@@ -72,7 +72,7 @@ The validator is a gate: exit 0 (`PASS`) required before any submission.
 2. Never commit secrets, tokens, or credentials.
 3. Never hand-edit `graphify-out/` outputs; regenerate them with the graphify pipeline.
 4. Keep `main` in a state where the documented commands work.
-5. Current version: **0.2.0** (Kaggle-only compute rules and the cascade C+B design; 0.1.0 = initial docs, EDA and benchmark tooling, knowledge graph).
+5. Current version: **1.0.0** (validated submission). History: 0.3.0 = autonomous search + cached keys; 0.2.0 = Kaggle-only compute rules and cascade C+B design; 0.1.0 = initial docs, EDA and benchmark tooling, knowledge graph.
 
 ## 6. Compute rules — Kaggle-only
 

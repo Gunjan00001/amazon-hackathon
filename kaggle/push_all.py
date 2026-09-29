@@ -36,6 +36,8 @@ KERNELS = [
     {"nb": "N4", "file": "N4_train_gbdt", "slug": "amz-er-n4-train-gbdt", "gpu": False},
     {"nb": "N5", "file": "N5_rerank", "slug": "amz-er-n5-rerank", "gpu": True},
     {"nb": "N6", "file": "N6_decide", "slug": "amz-er-n6-decide", "gpu": False},
+    {"nb": "A1", "file": "A1_search", "slug": "amz-er-a1-search", "gpu": False},
+    {"nb": "A1f", "file": "A1f_finalize", "slug": "amz-er-a1f-finalize", "gpu": False},
 ]
 
 PLANS = {
@@ -44,6 +46,10 @@ PLANS = {
         ("N2", ["amz-er-n1-clean"]),
         ("N4", ["amz-er-n1-clean", "amz-er-n2-block"]),
         ("N6", ["amz-er-n2-block", "amz-er-n4-train-gbdt"]),
+    ],
+    "auto": [
+        ("A1", ["amz-er-n1-clean"]),
+        ("A1f", ["amz-er-n1-clean", "amz-er-a1-search"]),
     ],
     "full": [
         ("N1", []),
@@ -224,7 +230,7 @@ def main():
     d.add_argument("--only", nargs="*", choices=["raw", "code", "wheels"])
     d.set_defaults(func=cmd_datasets)
     p = sub.add_parser("push")
-    p.add_argument("--plan", choices=["v1", "full"], default="full")
+    p.add_argument("--plan", choices=["v1", "full", "auto"], default="full")
     p.add_argument("--only", nargs="*")
     p.add_argument("--wait", action="store_true")
     p.set_defaults(func=cmd_push)

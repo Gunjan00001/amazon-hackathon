@@ -12,13 +12,17 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# Generated caches and artifacts
+# Generated caches
 tools/eda_cache/
 graphify-out/cache/
 graphify-out/.graphify_*
-output/**/*.tsv
 
-# Pipeline artifacts (regenerated on Kaggle)
+# NOTE: output/**/*.tsv are intentionally committed (via Git LFS) so the validated
+# submission survives without re-running the Kaggle pipeline. Everything below is
+# excluded because it is regenerable and/or embeds non-redistributable challenge data.
+
+# Regenerable / non-redistributable outputs and heavy inputs (see docs/REPOSITORY_GUIDE.md)
+# artifacts/ holds derived parquet caches that embed cleaned raw records.
 artifacts/
 submission/staging/
 kaggle/staging/

@@ -1,101 +1,142 @@
-# Graph Report - Amazon project  (2026-09-25)
+# Graph Report - amazon-hackathon  (2026-09-26)
 
 ## Corpus Check
-- Corpus is ~9,356 words - fits in a single context window. You may not need a graph.
+- Corpus is ~29,029 words - fits in a single context window. You may not need a graph.
 
 ## Summary
-- 64 nodes · 106 edges · 8 communities
-- Extraction: 90% EXTRACTED · 10% INFERRED · 0% AMBIGUOUS · INFERRED: 11 edges (avg confidence: 0.81)
-- Token cost: 9,500 input · 4,200 output
+- 271 nodes · 636 edges · 21 communities (20 shown, 1 thin omitted)
+- Extraction: 97% EXTRACTED · 3% INFERRED · 0% AMBIGUOUS · INFERRED: 19 edges (avg confidence: 0.82)
+- Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- Challenge Docs & Country Constraints
-- GBDT Benchmark Tool
-- Sources, Ground Truth & Constraints
-- Dataset EDA Tool
-- Submission Validator
-- Submission Package & Outputs
-- Scoring & Singletons
-- Data Noise & Matching Features
+- ber/search.py
+- blocking.py
+- train_gbdt.py
+- stages/rerank.py
+- best_threshold()
+- Business Entity Resolution Challenge
+- vector_features.py
+- push_all.py
+- io_tsv.py
+- generate_candidates()
+- bench_gbdt.py
+- eda_dataset.py
+- validate_submission.py
+- make_notebooks.py
+- auto.py
+- Injective ground truth
 
 ## God Nodes (most connected - your core abstractions)
-1. `Business Entity Resolution Challenge` - 9 edges
-2. `ML Challenge 2026 Problem Statement (README)` - 8 edges
-3. `main()` - 7 edges
-4. `matching_results.tsv` - 7 edges
-5. `F_0.5 Score (β = 0.5)` - 7 edges
-6. `validate()` - 6 edges
-7. `norm_series()` - 5 edges
-8. `main()` - 5 edges
-9. `train_ground_truth.tsv` - 5 edges
-10. `Solution Documentation Template` - 5 edges
+1. `finalize()` - 25 edges
+2. `run_search()` - 22 edges
+3. `prepare_records()` - 12 edges
+4. `generate_candidates()` - 11 edges
+5. `classical_features()` - 11 edges
+6. `train_model()` - 11 edges
+7. `fold_ascii()` - 11 edges
+8. `normalize_name()` - 11 edges
+9. `normalize_address()` - 11 edges
+10. `prepare_keys()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `ML Challenge 2026 Problem Statement (README)` --semantically_similar_to--> `Business Entity Resolution Challenge`  [INFERRED] [semantically similar]
-  D:/Amazon project/DATA/student_resource/README.md → D:/Amazon project/PROBLEM_STATEMENT.md
-- `TSV / Comma / Encoding Reading Gotchas` --conceptually_related_to--> `matching_results.tsv`  [INFERRED]
-  D:/Amazon project/DATA/student_resource/dataset/DATASET.md → D:/Amazon project/PROBLEM_STATEMENT.md
-- `Singletons: 5.585% of Train S1 Entities` --semantically_similar_to--> `Singleton Scoring (no true matches)`  [INFERRED] [semantically similar]
-  D:/Amazon project/DATA/student_resource/dataset/DATASET.md → D:/Amazon project/PROBLEM_STATEMENT.md
-- `Template §4: Matching Model` --conceptually_related_to--> `String Similarity Features (Jaccard, Levenshtein, TF-IDF cosine)`  [INFERRED]
-  D:/Amazon project/DATA/student_resource/Documentation_template.md → D:/Amazon project/PROBLEM_STATEMENT.md
-- `Dataset Description (Measured Stats)` --references--> `Business Entity Resolution Challenge`  [EXTRACTED]
-  D:/Amazon project/DATA/student_resource/dataset/DATASET.md → D:/Amazon project/PROBLEM_STATEMENT.md
+- `main()` --calls--> `generate_candidates()`  [EXTRACTED]
+  tools/probe_blocking.py → code/business_entity_resolution/src/ber/blocking.py
+- `main()` --calls--> `split_id_list()`  [EXTRACTED]
+  tools/probe_blocking.py → code/business_entity_resolution/src/ber/io_tsv.py
+- `Open-set country (France zero-shot)` --conceptually_related_to--> `Business Entity Resolution Challenge`  [EXTRACTED]
+  DATA/student_resource/dataset/DATASET.md → PROBLEM_STATEMENT.md
+- `Three sources (S1 reference, S2/S3 noisy)` --conceptually_related_to--> `Business Entity Resolution Challenge`  [EXTRACTED]
+  DATA/student_resource/dataset/DATASET.md → PROBLEM_STATEMENT.md
+- `No external data lookup` --references--> `Business Entity Resolution Challenge`  [EXTRACTED]
+  RULES.md → PROBLEM_STATEMENT.md
 
 ## Import Cycles
 - None detected.
 
 ## Hyperedges (group relationships)
-- **Entity Resolution Pipeline Flow (Sources -> Blocking -> Candidates -> Matches)** — problem_statement_source1, problem_statement_source2, problem_statement_source3, problem_statement_blocking, problem_statement_candidate_pairs, problem_statement_matching_results [EXTRACTED 1.00]
-- **Final Submission Package Components** — problem_statement_submission_package, problem_statement_matching_results, problem_statement_candidate_pairs, documentation_template_solution_template [EXTRACTED 1.00]
-- **Measured Dataset Constraints Shaping Evaluation** — dataset_injective_ground_truth, dataset_singletons, dataset_france_zero_shot, dataset_nonlatin_names, problem_statement_f05 [INFERRED 0.80]
+- **Candidate-generation + matcher cascade stages** — design_idf_blocking, design_lightgbm_matcher, design_cross_encoder, design_embedding_stage [INFERRED 0.80]
 
-## Communities (8 total, 0 thin omitted)
+## Communities (21 total, 1 thin omitted)
 
-### Community 0 - "Challenge Docs & Country Constraints"
-Cohesion: 0.19
-Nodes (13): Measured Country Distribution (US/India/France), Dataset Description (Measured Stats), tools/eda_stats.json (EDA cache), tools/eda_dataset.py, France as Zero-Shot Country, Template §3: Candidate Generation (Blocking), Template §4: Matching Model, Solution Documentation Template (+5 more)
+### Community 0 - "ber/search.py"
+Cohesion: 0.11
+Nodes (36): load_keys(), save_keys(), matches_from_scores(), one_to_one_assign(), prune_top_k(), to_entity_ids(), grouped_split(), _best_decision() (+28 more)
 
-### Community 1 - "GBDT Benchmark Tool"
+### Community 1 - "blocking.py"
+Cohesion: 0.13
+Nodes (30): _addr_tokens(), _idf(), mid_blocking_tokens(), _name_tokens(), _row_keys(), s1_blocking_tokens(), score_keys(), _significant() (+22 more)
+
+### Community 2 - "train_gbdt.py"
+Cohesion: 0.15
+Nodes (25): build_pair_frame(), build_pair_frame_prepared(), classical_features(), _cpdist(), _jaccard_sets(), _lens(), prepare_records(), DataFrame (+17 more)
+
+### Community 3 - "stages/rerank.py"
+Cohesion: 0.17
+Nodes (17): blocking_recall(), split_id_list(), positive_pairs(), _part(), ndarray, score_texts(), serialize_pair(), load_mid() (+9 more)
+
+### Community 4 - "best_threshold()"
+Cohesion: 0.20
+Nodes (15): evaluate_solution(), holdout_mask(), best_threshold(), entity_f05(), macro_f05(), ndarray, _macro_from_pred(), _case() (+7 more)
+
+### Community 5 - "Business Entity Resolution Challenge"
+Cohesion: 0.11
+Nodes (19): Pipeline reproduce README, Open-set country (France zero-shot), Cross-script Indic names, Three sources (S1 reference, S2/S3 noisy), Autonomous validation-driven search, Classical + Boost cascade (C+B), Cross-encoder rerank stage, Multilingual e5 embedding stage (+11 more)
+
+### Community 6 - "vector_features.py"
+Cohesion: 0.23
+Nodes (13): encode_source(), load_model(), main(), cosine_matrix_rows(), dequantize(), load_vector_store(), pair_vector_features(), ndarray (+5 more)
+
+### Community 7 - "push_all.py"
+Cohesion: 0.33
+Nodes (13): cmd_datasets(), cmd_fetch(), cmd_push(), cmd_status(), dataset_exists(), kernel_dir(), kernel_status(), main() (+5 more)
+
+### Community 8 - "io_tsv.py"
+Cohesion: 0.28
+Nodes (10): format_id_list(), _id_sort_key(), s1_sort_key(), _write(), write_candidate_pairs(), write_matching_results(), test_id_list_roundtrip_and_empty(), test_write_matching_results_exact_format() (+2 more)
+
+### Community 9 - "generate_candidates()"
+Cohesion: 0.39
+Nodes (11): build_index(), generate_candidates(), generate_candidates_from_keys(), prepare_keys(), _mid(), _s1(), test_cap_prefers_rare_shared_token(), test_generates_expected_pairs_and_country_gate() (+3 more)
+
+### Community 10 - "bench_gbdt.py"
 Cohesion: 0.35
 Nodes (11): best_entity_f05(), build_pairs(), compute_features(), entity_macro_f05(), load_positives(), load_s1_sample(), main(), norm_one() (+3 more)
 
-### Community 2 - "Sources, Ground Truth & Constraints"
-Cohesion: 0.39
-Nodes (8): Injective Ground-Truth Mapping, One-to-One Assignment Prior, Business Entity Resolution Challenge, train_ground_truth.tsv, Model Constraints (MIT/Apache 2.0, <=8B params), Source 1 (Deduplicated Reference Source), Source 2, Source 3
-
-### Community 3 - "Dataset EDA Tool"
+### Community 11 - "eda_dataset.py"
 Cohesion: 0.43
 Nodes (6): cached(), check_membership(), main(), pct(), scan_ground_truth(), scan_source()
 
-### Community 4 - "Submission Validator"
+### Community 12 - "validate_submission.py"
 Cohesion: 0.62
 Nodes (6): examples(), load_match_targets(), main(), read_ids(), validate(), validate_id_list_file()
 
-### Community 5 - "Submission Package & Outputs"
-Cohesion: 0.47
-Nodes (6): TSV / Comma / Encoding Reading Gotchas, Template Appendix A: Code Artefacts, candidate_pairs.tsv, matching_results.tsv, Final Submission Package (zip), utils/validate_submission.py
+### Community 13 - "make_notebooks.py"
+Cohesion: 0.60
+Nodes (5): code_cell(), main(), make_notebook(), md_cell(), run_expression()
 
-### Community 6 - "Scoring & Singletons"
-Cohesion: 0.50
-Nodes (5): Match-Count Distribution (mean 3.461, max 11), Singletons: 5.585% of Train S1 Entities, Entity Resolution (ER), F_0.5 Score (β = 0.5), Singleton Scoring (no true matches)
-
-### Community 7 - "Data Noise & Matching Features"
-Cohesion: 0.50
-Nodes (5): Missing business_address (~3.3% of S2/S3), Non-Latin Script Names (~15% of Train S2), UTF-8 Files / cp1252 Console Artifact, Noise Patterns (Name & Address Variations), String Similarity Features (Jaccard, Levenshtein, TF-IDF cosine)
+### Community 14 - "auto.py"
+Cohesion: 0.80
+Nodes (4): find_student_resource(), main(), run(), validate()
 
 ## Knowledge Gaps
-- **9 isolated node(s):** `Model Constraints (MIT/Apache 2.0, <=8B params)`, `Template Appendix A: Code Artefacts`, `tools/eda_stats.json (EDA cache)`, `Match-Count Distribution (mean 3.461, max 11)`, `Missing business_address (~3.3% of S2/S3)` (+4 more)
+- **9 isolated node(s):** `Three sources (S1 reference, S2/S3 noisy)`, `Injective ground truth`, `Cross-script Indic names`, `No external data lookup`, `Kaggle-only compute` (+4 more)
   These have ≤1 connection - possible missing edges or undocumented components.
+- **1 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `F_0.5 Score (β = 0.5)` connect `Scoring & Singletons` to `Challenge Docs & Country Constraints`, `Sources, Ground Truth & Constraints`, `Submission Package & Outputs`?**
-  _High betweenness centrality (0.114) - this node is a cross-community bridge._
-- **Why does `ML Challenge 2026 Problem Statement (README)` connect `Challenge Docs & Country Constraints` to `Sources, Ground Truth & Constraints`, `Submission Package & Outputs`, `Scoring & Singletons`?**
-  _High betweenness centrality (0.100) - this node is a cross-community bridge._
-- **Why does `Template §4: Matching Model` connect `Challenge Docs & Country Constraints` to `Scoring & Singletons`, `Data Noise & Matching Features`?**
-  _High betweenness centrality (0.082) - this node is a cross-community bridge._
-- **What connects `Model Constraints (MIT/Apache 2.0, <=8B params)`, `Template Appendix A: Code Artefacts`, `tools/eda_stats.json (EDA cache)` to the rest of the system?**
+- **Why does `prepare_records()` connect `train_gbdt.py` to `ber/search.py`, `blocking.py`?**
+  _High betweenness centrality (0.023) - this node is a cross-community bridge._
+- **Why does `pair_vector_features()` connect `vector_features.py` to `train_gbdt.py`?**
+  _High betweenness centrality (0.022) - this node is a cross-community bridge._
+- **Why does `positive_pairs()` connect `stages/rerank.py` to `ber/search.py`, `train_gbdt.py`?**
+  _High betweenness centrality (0.021) - this node is a cross-community bridge._
+- **Are the 2 inferred relationships involving `prepare_records()` (e.g. with `normalize_address()` and `normalize_name()`) actually correct?**
+  _`prepare_records()` has 2 INFERRED edges - model-reasoned connections that need verification._
+- **What connects `Three sources (S1 reference, S2/S3 noisy)`, `Injective ground truth`, `Cross-script Indic names` to the rest of the system?**
   _9 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `ber/search.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.10707070707070707 - nodes in this community are weakly interconnected._
+- **Should `blocking.py` be split into smaller, more focused modules?**
+  _Cohesion score 0.13445378151260504 - nodes in this community are weakly interconnected._
