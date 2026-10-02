@@ -311,7 +311,8 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
   `output/`, `code/`, `Documentation_template.md` (no wrapper folder), including
   `code/business_entity_resolution/models/`. The new zip is 1,377,402,398 bytes (33 entries;
   `candidate_pairs.tsv` sha256 `a259aad1e02ea08453366f980fe2fcc92cebb2566285a1759739eb8fcf2ed0cf`).
-  Re-uploaded to release `submission-0.811`; removed the old misnamed `AA._submission.zip`.
+  Re-uploaded to release `submission-0.811`; GitHub stores the asset as `AA._submission.zip`
+  (the double dot is collapsed on upload) and the previous asset was overwritten in place.
 - Verified `output/matching_results.tsv` is byte-identical to the scored release file
   (sha256 `2363074e279ea7f75489c44ebedffd006864730c37dc79c6a7c5886c68f51236`) and structurally valid:
   1,732,544 rows, 212,118 singletons, no duplicate rows or IDs, `S2-`/`S3-` only.
