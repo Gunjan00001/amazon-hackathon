@@ -75,8 +75,8 @@ and `6ab5628d5a817_amazon_ml_challenge_problem_statement.pdf` — **all tracked*
 | `SUBMIT/candidate_pairs.tsv` | 3,252,358,984 | 3.03 GiB | **cannot go on GitHub** (>2 GB LFS limit); split parts in LFS |
 | `SUBMIT/candidate_pairs.tsv.part_00` | 1,626,179,493 | 1.51 GiB | **LFS** |
 | `SUBMIT/candidate_pairs.tsv.part_01` | 1,626,179,491 | 1.51 GiB | **LFS** |
-| `SUBMIT/AA.._submission.zip` | 1,379,615,263 | 1.28 GiB | **LFS** |
-| `dist/AA..__submission.zip` | 1,379,615,263 | 1.28 GiB | duplicate of the SUBMIT zip (not LFS) |
+| `SUBMIT/AA.._submission.zip` | 1,377,402,398 | 1.28 GiB | **LFS** |
+| `dist/AA.._submission.zip` | 1,377,402,398 | 1.28 GiB | duplicate of the SUBMIT zip (not LFS) |
 | `SUBMIT/matching_results.tsv` | 79,283,470 | 75.6 MiB | same object as `output/matching_results.tsv` (LFS) |
 | `submission/matching_results.tsv` | 79,283,470 | 75.6 MiB | tracked (regular git) |
 | `output/candidate_pairs.tsv` | 3,252,358,984 | 3.03 GiB | duplicate of SUBMIT copy (not LFS) |
@@ -96,7 +96,8 @@ SUBMIT/AA.._submission.zip             (1.28 GiB)
 ```
 
 Tracked by patterns added to `.gitattributes`. Fetch with `git lfs pull`. The four objects total
-**~4.39 GiB** of LFS storage and were pushed successfully to `origin/main` on 2026-09-29. A clone
+**~4.39 GiB** of LFS storage and were pushed successfully to `origin/main` (2026-09-29; the
+submission zip was refreshed to the corrected package on 2026-10-02). A clone
 needs Git LFS installed and enough LFS bandwidth/quota; use
 `git lfs pull --include="SUBMIT/candidate_pairs.tsv.part_*"` to fetch selectively.
 

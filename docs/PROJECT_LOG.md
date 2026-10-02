@@ -316,5 +316,6 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
 - Verified `output/matching_results.tsv` is byte-identical to the scored release file
   (sha256 `2363074e279ea7f75489c44ebedffd006864730c37dc79c6a7c5886c68f51236`) and structurally valid:
   1,732,544 rows, 212,118 singletons, no duplicate rows or IDs, `S2-`/`S3-` only.
-- Note: the git-LFS object for `SUBMIT/AA.._submission.zip` still holds the previous zip; the
-  corrected package is the release asset (the documented distribution channel).
+- Updated the Git-LFS object for `SUBMIT/AA.._submission.zip` to the corrected package
+  (oid `ff391b6c7094f08b0e297c0d6d15fd974adf2aec97ca19d4ddffd644b971bf90`, 1,377,402,398 bytes),
+  so `git lfs pull` now yields the corrected zip as well as the release asset.
