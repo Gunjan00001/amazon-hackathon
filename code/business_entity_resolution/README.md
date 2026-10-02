@@ -33,31 +33,32 @@ Adjust `dataset_dir` in the config to where the challenge data is extracted.
 # 3. Blocking recall audit on train (DuckDB, ~50 s)
 .venv\Scripts\python.exe -m ber.cli audit --split train
 
-# 4a. Training pairs + pairwise features for train (parallel, 8 workers)
+# 4. Training pairs + pairwise features for train (parallel, 8 workers)
 .venv\Scripts\python.exe -m ber.cli features --split train --workers 8 --combine
 
-# 4b. Train the LightGBM matcher and tune the F0.5 threshold
+# 5. Train the LightGBM matcher
 .venv\Scripts\python.exe -m ber.cli train
 
-# 5. Inference pairs + parallel features for test
+# 6. Full-candidate held-out predictions for calibration (writes DATA/tmp/valfull_pred)
+.venv\Scripts\python.exe -m ber.cli validation --workers 8
+
+# 7. Per-country thresholds + singleton rule -> models/threshold.json
+.venv\Scripts\python.exe -m ber.cli calibrate
+
+# 8. Inference pairs + parallel features for test
 .venv\Scripts\python.exe -m ber.cli features --split test --workers 8
 
-# 6. Predict, apply one-to-one, write output/*.tsv
-.venv\Scripts\python.exe -m ber.cli predict --split test --one-to-one --threshold 0.925
+# 9. Predict, apply the calibration + one-to-one, write output/*.tsv
+.venv\Scripts\python.exe -m ber.cli predict --split test --one-to-one
 
-# 7. Validate (must print PASS)
+# 10. Validate (must print PASS)
 .venv\Scripts\python.exe DATA\student_resource\utils\validate_submission.py `
     --matching output\matching_results.tsv `
     --candidate output\candidate_pairs.tsv `
     --test-dir DATA\student_resource\dataset\test
 
-# 8. Local (4:1, optimistic) validation marks
+# 11. Optional diagnostics: local (4:1) marks and the France proxy
 .venv\Scripts\python.exe -m ber.cli evaluate
-
-# 9. Believable held-out estimate: full candidates for the 20% held-out S1
-.venv\Scripts\python.exe -m ber.cli validation --workers 8
-
-# 10. Leave-one-country-out (unseen-country / France proxy)
 .venv\Scripts\python.exe -m ber.cli loo
 ```
 
@@ -96,16 +97,17 @@ empty second column. The official validator reports `PASS`.
 ## Tuning notes
 
 - Per-pass block caps are in `config.json` (`pass_caps`); per-S1 cap is `cap`.
-- **Threshold must be tuned on the full candidate distribution, not the 4:1 sample.** On the full
-  candidates for the held-out S1 groups, the optimum moved from 0.675 (4:1 sample) to **0.925**;
-  all submission outputs use 0.925.
+- **Calibrate on the full candidate distribution, not the 4:1 sample.** `ber.cli validation`
+  predicts every candidate for the held-out S1 groups and `ber.cli calibrate` tunes the adopted
+  per-country thresholds (global 0.95; India 0.925 / US 0.95) plus the singleton rule
+  (`max(prob) < 0.30` → empty list), then writes `models/threshold.json`; `predict` applies it by
+  default (do not pass `--threshold`, which would override the calibrated thresholds).
 - Reported scores:
   - **Official leaderboard (public Portal, 26 Sep 2026): macro F0.5 = 0.811** (Evaluated) — the real score.
-  - 4:1 sampled split (grouped), one-to-one: macro F0.5 **0.9807** — *optimistic, not comparable to
-    the leaderboard* (see `DATA/reports/eval_marks.json`).
-  - Full candidates, held-out S1 groups (test-like): macro F0.5 **0.8488**, 95% CI 0.848–0.850,
-    candidate recall ceiling 0.814, India 0.788 / US 0.889
-    (see `DATA/reports/eval_full_candidates.json`).
+  - **Adopted v2.0.0, full candidates, held-out S1 groups (test-like): macro F0.5 0.8577**
+    (US 0.8983 / India 0.7968) — the calibration shipped in `models/threshold.json`.
+  - Baseline (no char-3 features / per-country calibration), same candidate set: macro F0.5
+    **0.8488**, 95% CI 0.848–0.850, candidate recall ceiling 0.814.
   - Leave-one-country-out (unseen-country proxy for France): train-US→India **0.668**,
     train-India→US **0.804**, versus full-model US 0.891 / India 0.788
     (see `DATA/reports/eval_loo.json`). France is ~15% of test and has no labels, so the realistic

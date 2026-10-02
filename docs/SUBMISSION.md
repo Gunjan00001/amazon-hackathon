@@ -14,11 +14,14 @@
 |---|---|---|
 | `SUBMIT/matching_results.tsv` | 75.6 MB | **Leaderboard upload** — the only scored file |
 | `SUBMIT/candidate_pairs.tsv` | 3.10 GB | Blocking candidate set (final package `output/`) |
-| `SUBMIT/AA.._submission.zip` | 1.32 GB | Full final submission package (code + outputs + methodology) |
+| `SUBMIT/AA.._submission.zip` | 1.38 GB | Full final submission package (code + outputs + methodology) |
 | `SUBMIT/README.md` | — | Folder-level manifest and instructions |
 
+> The final zip was rebuilt on 2026-10-02 (methodology header filled, pipeline README corrected,
+> `models/` added, root-level entries) and re-uploaded to release `submission-0.811`.
+
 Equivalent locations: `output/matching_results.tsv`, `output/candidate_pairs.tsv`,
-`dist/AA..__submission.zip`, `submission/matching_results.tsv` (tracked in git).
+`dist/AA.._submission.zip`, `submission/matching_results.tsv` (tracked in git).
 
 ## 2. Output contract
 

@@ -296,3 +296,24 @@ and the Python 3.12 venv (`.venv\Scripts\python.exe`).
   and the byte-exact split `SUBMIT/candidate_pairs.tsv.part_{00,01}` (1.51 GiB each); the 3.03 GiB
   `candidate_pairs.tsv` itself exceeds GitHub's 2 GB LFS cap, so only the split parts are stored.
 - Updated the graphify knowledge graph to include this handover documentation.
+
+## 2026-10-02 - Final submission package rebuild (release asset)
+
+- Audited the released `AA._submission.zip` against PROBLEM_STATEMENT.md section 9 and found three
+  packaging defects: the methodology header was still a placeholder (`AA..><`, `[members]`,
+  `[Date]`); `code/business_entity_resolution/README.md` was the repo root README instead of the
+  pipeline run instructions; and `models/` was missing. The packaged code README also omitted
+  `calibrate`, so following it could not reproduce the adopted v2.0.0 output.
+- Filled the methodology header (team `AA..`; members Gunjan Pal, Aman Gandotra, Anushka, Ibrahim;
+  submission date 2026-09-26) and corrected the code README run order (`validation` then
+  `calibrate`, no `--threshold` override) plus the adopted 0.8577 score.
+- Rebuilt `AA.._submission.zip` from the current `main` code with spec-compliant root-level entries
+  `output/`, `code/`, `Documentation_template.md` (no wrapper folder), including
+  `code/business_entity_resolution/models/`. The new zip is 1,377,402,398 bytes (33 entries;
+  `candidate_pairs.tsv` sha256 `a259aad1e02ea08453366f980fe2fcc92cebb2566285a1759739eb8fcf2ed0cf`).
+  Re-uploaded to release `submission-0.811`; removed the old misnamed `AA._submission.zip`.
+- Verified `output/matching_results.tsv` is byte-identical to the scored release file
+  (sha256 `2363074e279ea7f75489c44ebedffd006864730c37dc79c6a7c5886c68f51236`) and structurally valid:
+  1,732,544 rows, 212,118 singletons, no duplicate rows or IDs, `S2-`/`S3-` only.
+- Note: the git-LFS object for `SUBMIT/AA.._submission.zip` still holds the previous zip; the
+  corrected package is the release asset (the documented distribution channel).

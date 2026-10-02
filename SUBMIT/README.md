@@ -12,7 +12,7 @@
 |---|---|---|---|
 | **`matching_results.tsv`** | 75.6 MB | Final entity matches. **The only file scored on the leaderboard.** | Upload to the challenge **Portal**. |
 | `candidate_pairs.tsv` | 3.10 GB | Blocking / candidate-generation set actually fed to the matcher. | Goes inside the final package `output/` (not scored on the leaderboard). |
-| `AA.._submission.zip` | 1.32 GB | Full final submission package (see structure below). | Submit as the team's final package. |
+| `AA.._submission.zip` | 1.38 GB | Full final submission package (see structure below). | Submit as the team's final package. |
 
 All three are byte-identical copies (hardlinks) of the working outputs in `output/` and `dist/`.
 
@@ -47,15 +47,16 @@ Result: **PASS** — no blocking issues; safe to submit.
 ## `AA.._submission.zip` structure (per Problem Statement §9)
 
 ```
-AA.._submission/
-├── output/
-│   ├── matching_results.tsv
-│   └── candidate_pairs.tsv
-├── code/business_entity_resolution/
-│   ├── src/            # runnable pipeline (ber package + config.json)
-│   ├── README.md       # reproduction steps
-│   └── requirements.txt# pinned dependencies
-└── Documentation_template.md   # methodology write-up
+output/
+├── matching_results.tsv
+└── candidate_pairs.tsv
+code/business_entity_resolution/
+├── src/                 # runnable pipeline (ber package + config.json)
+├── models/              # lgbm.txt, feature_list.json, threshold.json
+├── config.json          # pass caps + LightGBM params
+├── README.md            # reproduction steps
+└── requirements.txt     # pinned dependencies
+Documentation_template.md   # methodology write-up
 ```
 
 ## Method (one paragraph)

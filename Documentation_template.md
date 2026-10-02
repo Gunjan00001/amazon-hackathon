@@ -1,8 +1,8 @@
 # ML Challenge 2026: Business Entity Resolution Solution Template
 
-**Team Name:** AA..><  
-**Team Members:** [List all team members]  
-**Submission Date:** [Date]
+**Team Name:** AA..  
+**Team Members:** Gunjan Pal, Aman Gandotra, Anushka, Ibrahim  
+**Submission Date:** 2026-09-26
 
 ---
 
